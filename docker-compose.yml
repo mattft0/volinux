@@ -8,8 +8,6 @@ services:
     environment:
       - FILE_NAME=${FILE_NAME} # Passe la variable d'environnement à Docker
       - KERNEL_VERSION=${KERNEL_VERSION} # Si tu veux passer KERNEL_VERSION
-      - LINUX_IMAGE=${LINUX_IMAGE} # Si tu veux passer LINUX_IMAGE
-      - LINUX_HEADERS=${LINUX_HEADERS} # Si tu veux passer LINUX_HEADERS
     volumes:
       - ./start.sh:/start.sh # Monte le script start.sh
     command: [ "/bin/bash", "/start.sh" ]

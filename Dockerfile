@@ -5,13 +5,19 @@ ARG FILE_NAME
 ARG KERNEL_VERSION
 
 # Mise à jour du système et installation des outils nécessaires
-RUN add-apt-repository universe && add-apt-repository main
 RUN apt update && apt upgrade -y
-RUN apt install -y build-essential dwarfdump git zip
+RUN apt install -y build-essential dwarfdump git zip wget
 
 # Utilisation de la variable KERNEL_VERSION
 RUN echo ${KERNEL_VERSION}
-RUN apt install -y linux-headers-${KERNEL_VERSION} linux-image-${KERNEL_VERSION}
+
+# Téléchargement et installation des paquets du noyau
+RUN wget https://kernel.ubuntu.com/~kernel-ppa/mainline/v${KERNEL_VERSION}/linux-headers-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
+    wget https://kernel.ubuntu.com/~kernel-ppa/mainline/v${KERNEL_VERSION}/linux-image-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
+    dpkg -i linux-headers-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
+    dpkg -i linux-image-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb
+
+RUN apt install -y linux-headers-${KERNEL_VERSION}-generic linux-image-${KERNEL_VERSION}-generic
 
 # Vérification des fichiers du noyau
 RUN ls -la /lib/modules/${KERNEL_VERSION}/ && ls -la /boot/

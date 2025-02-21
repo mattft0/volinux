@@ -4,8 +4,9 @@ FROM debian:12
 RUN apt update && apt upgrade -y
 RUN apt install -y build-essential dwarfdump git zip wget
 
-# Installation des dépendances pour Volatility
-RUN apt install -y python2.7 python2.7-dev
+# Ajouter les dépôts d'archives pour Python 2.7
+RUN echo "deb http://archive.debian.org/debian/ stretch main" > /etc/apt/sources.list.d/debian-archive.list
+RUN apt update && apt install -y python2.7 python2.7-dev
 
 # Clonage de Volatility
 RUN git clone --depth=1 https://github.com/volatilityfoundation/volatility && \

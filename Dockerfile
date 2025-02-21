@@ -1,6 +1,6 @@
 FROM debian:12
 
-RUN apt install ${KERNEL_VERSION}
+RUN apt install ${LINUX_IMAGE} && apt install ${LINUX_HEADERS} -y
 RUN apt update && apt upgrade -y
 RUN apt install build-essential dwarfdump git -y
 RUN git clone --depth=1 https://github.com/volatilityfoundation/volatility && cd volatility/tools/linux && make

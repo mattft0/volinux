@@ -5,6 +5,7 @@ ARG FILE_NAME
 ARG KERNEL_VERSION
 
 # Mise à jour du système et installation des outils nécessaires
+RUN add-apt-repository universe && add-apt-repository main
 RUN apt update && apt upgrade -y
 RUN apt install -y build-essential dwarfdump git zip
 

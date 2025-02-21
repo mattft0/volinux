@@ -10,7 +10,7 @@
 
 FROM debian:12
 
-RUN apt update && apt install -y ${LINUX_IMAGE} ${LINUX_HEADERS}
+RUN apt update && apt install -y linux-headers-$(uname -r)
 
 RUN apt update && apt upgrade -y
 RUN apt install -y build-essential dwarfdump git zip
@@ -18,6 +18,7 @@ RUN apt install -y build-essential dwarfdump git zip
 RUN git clone --depth=1 https://github.com/volatilityfoundation/volatility && \
     cd volatility/tools/linux && \
     ls -la && \
+    ls -la /lib/modules/$(uname -r)/ && \
     make
 
 RUN test -f /volatility/tools/linux/module.dwarf && \

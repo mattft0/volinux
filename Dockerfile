@@ -13,7 +13,7 @@ COPY install_kernel.sh /usr/local/bin/install_kernel.sh
 RUN chmod +x /usr/local/bin/install_kernel.sh
 
 # Utiliser le script d'installation du noyau avec le fichier System.map
-RUN /usr/local/bin/install_kernel.sh /path/to/dump/System.map
+RUN /usr/local/bin/install_kernel.sh /boot/System.map-$(uname -r)
 
 # Vérification des fichiers générés
 RUN ls -la /lib/modules/ && ls -la /boot/

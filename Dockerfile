@@ -1,29 +1,27 @@
 FROM debian:12
 
-# Mise à jour du système et installation des outils nécessaires
+# Mise à jour et installation des outils nécessaires
 RUN apt update && apt upgrade -y
-RUN apt install -y build-essential dwarfdump git zip wget
+RUN apt install -y build-essential dwarfdump git zip
 
-# Clonage de Volatility
+# Installation des headers et du package de débogage du noyau
+RUN apt install -y linux-headers-$(uname -r) linux-image-$(uname -r)-dbg
+
+# Vérification de la présence de vmlinux
+RUN find /usr/lib/debug/boot -name "vmlinux*" && find /boot -name "vmlinux*"
+
+# Clonage de Volatility et ajout de la licence au module.c
 RUN git clone --depth=1 https://github.com/volatilityfoundation/volatility && \
-    echo 'MODULE_LICENSE("GPL");' >> volatility/tools/linux/module.c
+    echo 'MODULE_LICENSE("GPL");' >> volatility/tools/linux/module.c && \
+    cd volatility/tools/linux && \
+    make -C /lib/modules/$(uname -r)/build M=$(pwd) CONFIG_DEBUG_INFO=y modules
 
-# Copier le script shell d'installation dans le conteneur
-COPY install_kernel.sh /usr/local/bin/install_kernel.sh
-RUN chmod +x /usr/local/bin/install_kernel.sh
+# Vérification de la génération des fichiers
+RUN ls -la /volatility/tools/linux/
 
-# Utiliser le script d'installation du noyau avec le fichier System.map
-RUN /usr/local/bin/install_kernel.sh /boot/System.map-$(uname -r)
-
-# Vérification des fichiers générés
-RUN ls -la /lib/modules/ && ls -la /boot/
-
-# Créer le profil Volatility
+# Création du profil Volatility
 RUN zip VolatilityProfile.zip /volatility/tools/linux/module.dwarf /boot/System.map-$(uname -r)
 
-# Déplacer le profil Volatility vers le répertoire approprié
+# Déplacement du profil généré
 RUN mkdir -p /usr/lib/python2.7/dist-packages/volatility/plugins/linux/ && \
     mv VolatilityProfile.zip /usr/lib/python2.7/dist-packages/volatility/plugins/linux/
-
-# Vérification du profil généré
-RUN unzip -l /usr/lib/python2.7/dist-packages/volatility/plugins/linux/VolatilityProfile.zip

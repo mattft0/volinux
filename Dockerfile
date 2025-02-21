@@ -25,3 +25,6 @@ RUN zip VolatilityProfile.zip /volatility/tools/linux/module.dwarf /boot/System.
 # Déplacement du profil généré vers le répertoire Volatility
 RUN mkdir -p /usr/lib/python2.7/dist-packages/volatility/plugins/linux/ && \
     mv VolatilityProfile.zip /usr/lib/python2.7/dist-packages/volatility/plugins/linux/
+
+# Vérification des fichiers du profil créé
+RUN unzip -l /usr/lib/python2.7/dist-packages/volatility/plugins/linux/VolatilityProfile.zip

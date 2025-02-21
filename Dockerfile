@@ -8,7 +8,8 @@ ARG KERNEL_VERSION
 RUN apt update && apt upgrade -y
 RUN apt install -y build-essential dwarfdump git zip
 
-# Installation des headers du noyau et du fichier System.map
+# Utilisation de la variable KERNEL_VERSION
+RUN echo ${KERNEL_VERSION}
 RUN apt install -y linux-headers-${KERNEL_VERSION} linux-image-${KERNEL_VERSION}
 
 # Vérification des fichiers du noyau

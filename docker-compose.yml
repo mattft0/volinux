@@ -5,11 +5,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        FILE_NAME: ${FILE_NAME}
+        KERNEL_VERSION: ${KERNEL_VERSION}
     environment:
-      - FILE_NAME=${FILE_NAME} # Passe la variable d'environnement à Docker
-      - KERNEL_VERSION=${KERNEL_VERSION} # Si tu veux passer KERNEL_VERSION
+      - FILE_NAME=${FILE_NAME}
+      - KERNEL_VERSION=${KERNEL_VERSION} # Passer la variable d'environnement
     volumes:
-      - ./start.sh:/start.sh # Monte le script start.sh
+      - ./start.sh:/start.sh
     command: [ "/bin/bash", "/start.sh" ]
     stdin_open: true
     tty: true

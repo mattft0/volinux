@@ -7,8 +7,6 @@ RUN apt install -y build-essential dwarfdump git zip
 # Installation des headers et du package de débogage du noyau
 RUN apt install -y linux-headers-$(uname -r) linux-image-$(uname -r)
 
-# Vérification de la présence de vmlinux
-RUN find /usr/lib/debug/boot -name "vmlinux*" && find /boot -name "vmlinux*"
 
 # Clonage de Volatility et ajout de la licence au module.c
 RUN git clone --depth=1 https://github.com/volatilityfoundation/volatility && \

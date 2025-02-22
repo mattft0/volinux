@@ -13,7 +13,8 @@ RUN apt update && apt install -y \
 RUN echo "Kernel version: ${KERNEL_VERSION}"
 
 # Téléchargement des paquets du noyau
-RUN apt-get update && \
+RUN RUN apt-get update && \
+    apt-get install -y linux-headers-5.10.0-11-common linux-kbuild-5.10 linux-compiler-gcc-10-x86 && \
     apt-cache search linux-image | grep "${KERNEL_VERSION}" && \
     apt install -y linux-image-${KERNEL_VERSION}-generic linux-headers-${KERNEL_VERSION}-generic || \
     (echo "Kernel not found in repositories, attempting to download and install manually..." && \

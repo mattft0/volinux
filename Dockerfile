@@ -1,36 +1,35 @@
 FROM debian:12
 
-# Définition des arguments pour les variables
+# Définition des arguments
 ARG FILE_NAME
 ARG KERNEL_VERSION
 
-# Mise à jour du système et installation des outils nécessaires
-RUN apt update && apt upgrade -y
-RUN apt install -y build-essential dwarfdump git zip wget
+# Mise à jour et installation des outils nécessaires
+RUN apt update && apt install -y \
+    build-essential dwarfdump git zip wget \
+    python2.7 python2.7-minimal unzip
 
-# Utilisation de la variable KERNEL_VERSION
-RUN echo ${KERNEL_VERSION}
+# Affichage de la version du noyau pour debug
+RUN echo "Kernel version: ${KERNEL_VERSION}"
 
-# Téléchargement et installation des paquets du noyau
-# RUN wget https://kernel.ubuntu.com/~kernel-ppa/mainline/v${KERNEL_VERSION}/linux-headers-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
-#     wget https://kernel.ubuntu.com/~kernel-ppa/mainline/v${KERNEL_VERSION}/linux-image-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
-#     dpkg -i linux-headers-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
-#     dpkg -i linux-image-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb
+# Téléchargement des paquets du noyau
+RUN apt-get update && \
+    apt-cache search linux-image | grep "${KERNEL_VERSION}" && \
+    apt install -y linux-image-${KERNEL_VERSION}-generic linux-headers-${KERNEL_VERSION}-generic || \
+    (wget -q "https://snapshot.debian.org/archive/debian/pool/main/l/linux/linux-image-${KERNEL_VERSION}.deb" -O /tmp/linux-image.deb && \
+    wget -q "https://snapshot.debian.org/archive/debian/pool/main/l/linux/linux-headers-${KERNEL_VERSION}.deb" -O /tmp/linux-headers.deb && \
+    dpkg -i /tmp/linux-image.deb /tmp/linux-headers.deb || apt install -f -y) || \
+    (echo "Kernel ${KERNEL_VERSION} non trouvé, tentative de compilation..." && \
+    wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${KERNEL_VERSION}.tar.xz && \
+    tar -xf linux-${KERNEL_VERSION}.tar.xz && cd linux-${KERNEL_VERSION} && \
+    make defconfig && make -j$(nproc) && make modules_install && make install)
 
-# RUN apt install -y linux-headers-${KERNEL_VERSION}-generic linux-image-${KERNEL_VERSION}-generic
-
-RUN wget https://snapshot.debian.org/archive/debian/20220310T221404Z/pool/main/l/linux/linux-image-5.10.0-11-amd64-unsigned_5.10.92-2_amd64.deb && \
-    wget https://snapshot.debian.org/archive/debian-security/20220307T130529Z/pool/updates/main/l/linux/linux-headers-5.10.0-11-amd64_5.10.92-2_amd64.deb && \
-    dpkg -i linux-headers-5.10.0-11-amd64_5.10.92-2_amd64.deb && \
-    dpkg -i linux-image-5.10.0-11-amd64-unsigned_5.10.92-2_amd64.deb
-
-RUN apt install -y linux-headers-5.10.0-11-amd64 linux-image-5.10.0-11-amd64
 
 # Vérification des fichiers du noyau
 RUN ls -la /lib/modules/${KERNEL_VERSION}/ && ls -la /boot/
 
 # Clonage de Volatility et modification du fichier module.c
-RUN git clone --depth=1 https://github.com/volatilityfoundation/volatility && \
+RUN git clone --depth=1 https://github.com/volatilityfoundation/volatility.git && \
     echo 'MODULE_LICENSE("GPL");' >> volatility/tools/linux/module.c && \
     cd volatility/tools/linux && \
     make -C /lib/modules/${KERNEL_VERSION}/build M=$(pwd) modules
@@ -41,9 +40,9 @@ RUN ls -la /volatility/tools/linux/ && ls -la /boot/
 # Création du profil Volatility
 RUN zip VolatilityProfile.zip /volatility/tools/linux/module.dwarf /boot/System.map-${KERNEL_VERSION}
 
-# Déplacement du profil généré vers le répertoire Volatility
+# Déplacement du profil généré vers Volatility
 RUN mkdir -p /usr/lib/python2.7/dist-packages/volatility/plugins/linux/ && \
     mv VolatilityProfile.zip /usr/lib/python2.7/dist-packages/volatility/plugins/linux/
 
-# Vérification des fichiers du profil créé
+# Vérification finale
 RUN unzip -l /usr/lib/python2.7/dist-packages/volatility/plugins/linux/VolatilityProfile.zip

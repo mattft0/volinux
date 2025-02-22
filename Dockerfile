@@ -7,7 +7,7 @@ ARG KERNEL_VERSION
 # Mise à jour et installation des outils nécessaires
 RUN apt update && apt install -y \
     build-essential dwarfdump git zip wget \
-    python2.7 python2.7-minimal unzip
+    unzip
 
 # Affichage de la version du noyau pour debug
 RUN echo "Kernel version: ${KERNEL_VERSION}"
@@ -17,8 +17,8 @@ RUN apt-get update && \
     apt-cache search linux-image | grep "${KERNEL_VERSION}" && \
     apt install -y linux-image-${KERNEL_VERSION}-generic linux-headers-${KERNEL_VERSION}-generic || \
     (echo "Kernel not found in repositories, attempting to download and install manually..." && \
-    wget -q "https://snapshot.debian.org/archive/debian/pool/main/l/linux/linux-image-${KERNEL_VERSION}.deb" -O /tmp/linux-image.deb && \
-    wget -q "https://snapshot.debian.org/archive/debian/pool/main/l/linux/linux-headers-${KERNEL_VERSION}.deb" -O /tmp/linux-headers.deb && \
+    wget -q "https://snapshot.debian.org/archive/debian-security/20220307T130529Z/pool/updates/main/l/linux/linux-image-${KERNEL_VERSION}-dbg_5.10.92-2_amd64.deb" -O /tmp/linux-image.deb && \
+    wget -q "https://snapshot.debian.org/archive/debian-security/20220307T130529Z/pool/updates/main/l/linux/linux-headers-${KERNEL_VERSION}_5.10.92-2_amd64.deb" -O /tmp/linux-headers.deb && \
     dpkg -i /tmp/linux-image.deb /tmp/linux-headers.deb || apt install -f -y) || \
     (echo "Kernel ${KERNEL_VERSION} not found, attempting to compile from source..." && \
     wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${KERNEL_VERSION}.tar.xz && \

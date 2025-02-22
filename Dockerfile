@@ -12,12 +12,19 @@ RUN apt install -y build-essential dwarfdump git zip wget
 RUN echo ${KERNEL_VERSION}
 
 # Téléchargement et installation des paquets du noyau
-RUN wget https://kernel.ubuntu.com/~kernel-ppa/mainline/v${KERNEL_VERSION}/linux-headers-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
-    wget https://kernel.ubuntu.com/~kernel-ppa/mainline/v${KERNEL_VERSION}/linux-image-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
-    dpkg -i linux-headers-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
-    dpkg -i linux-image-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb
+# RUN wget https://kernel.ubuntu.com/~kernel-ppa/mainline/v${KERNEL_VERSION}/linux-headers-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
+#     wget https://kernel.ubuntu.com/~kernel-ppa/mainline/v${KERNEL_VERSION}/linux-image-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
+#     dpkg -i linux-headers-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb && \
+#     dpkg -i linux-image-${KERNEL_VERSION}-generic_${KERNEL_VERSION}_amd64.deb
 
-RUN apt install -y linux-headers-${KERNEL_VERSION}-generic linux-image-${KERNEL_VERSION}-generic
+# RUN apt install -y linux-headers-${KERNEL_VERSION}-generic linux-image-${KERNEL_VERSION}-generic
+
+RUN wget https://snapshot.debian.org/archive/debian/20220310T221404Z/pool/main/l/linux/linux-image-5.10.0-11-amd64-unsigned_5.10.92-2_amd64.deb && \
+    wget https://snapshot.debian.org/archive/debian-security/20220307T130529Z/pool/updates/main/l/linux/linux-headers-5.10.0-11-amd64_5.10.92-2_amd64.deb && \
+    dpkg -i linux-headers-5.10.0-11-amd64_5.10.92-2_amd64.deb && \
+    dpkg -i linux-image-5.10.0-11-amd64-unsigned_5.10.92-2_amd64.deb
+
+RUN apt install -y linux-headers-5.10.0-11-amd64 linux-image-5.10.0-11-amd64
 
 # Vérification des fichiers du noyau
 RUN ls -la /lib/modules/${KERNEL_VERSION}/ && ls -la /boot/

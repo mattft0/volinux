@@ -16,14 +16,14 @@ RUN echo "Kernel version: ${KERNEL_VERSION}"
 RUN apt-get update && \
     apt-cache search linux-image | grep "${KERNEL_VERSION}" && \
     apt install -y linux-image-${KERNEL_VERSION}-generic linux-headers-${KERNEL_VERSION}-generic || \
-    (wget -q "https://snapshot.debian.org/archive/debian/pool/main/l/linux/linux-image-${KERNEL_VERSION}.deb" -O /tmp/linux-image.deb && \
+    (echo "Kernel not found in repositories, attempting to download and install manually..." && \
+    wget -q "https://snapshot.debian.org/archive/debian/pool/main/l/linux/linux-image-${KERNEL_VERSION}.deb" -O /tmp/linux-image.deb && \
     wget -q "https://snapshot.debian.org/archive/debian/pool/main/l/linux/linux-headers-${KERNEL_VERSION}.deb" -O /tmp/linux-headers.deb && \
     dpkg -i /tmp/linux-image.deb /tmp/linux-headers.deb || apt install -f -y) || \
-    (echo "Kernel ${KERNEL_VERSION} non trouvé, tentative de compilation..." && \
+    (echo "Kernel ${KERNEL_VERSION} not found, attempting to compile from source..." && \
     wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${KERNEL_VERSION}.tar.xz && \
     tar -xf linux-${KERNEL_VERSION}.tar.xz && cd linux-${KERNEL_VERSION} && \
     make defconfig && make -j$(nproc) && make modules_install && make install)
-
 
 # Vérification des fichiers du noyau
 RUN ls -la /lib/modules/${KERNEL_VERSION}/ && ls -la /boot/

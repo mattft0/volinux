@@ -6,8 +6,8 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-export FILE_NAME=$1
-export KERNEL_VERSION=$(strings "${FILE_NAME}" | grep -i 'Linux version' | grep -v 'of' | sed -E 's/.*Linux version ([^ ]+).*/\1/' | head -n 1)
+FILE_NAME="$1"
+KERNEL_VERSION=$(strings "${FILE_NAME}" | grep -i 'Linux version' | grep -v 'of' | sed -E 's/.*Linux version ([^ ]+).*/\1/' | head -n 1)
 
 # Vérification si la version du noyau a été trouvée
 if [ -z "$KERNEL_VERSION" ]; then
@@ -15,8 +15,7 @@ if [ -z "$KERNEL_VERSION" ]; then
     exit 1
 fi
 
-export LINUX_IMAGE="linux-image-${KERNEL_VERSION}"
-export LINUX_HEADERS="linux-headers-${KERNEL_VERSION}"
-
 echo "Détection du noyau : ${KERNEL_VERSION}"
-docker-compose build --no-cache
+
+# Lancement de Docker Compose avec les arguments
+docker-compose build --no-cache --build-arg FILE_NAME="${FILE_NAME}" --build-arg KERNEL_VERSION="${KERNEL_VERSION}"

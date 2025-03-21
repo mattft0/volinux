@@ -1,18 +1,12 @@
-version: '3.8'
-
+version: '3'
 services:
-  memdump_service:
+  volatility_builder:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         FILE_NAME: ${FILE_NAME}
         KERNEL_VERSION: ${KERNEL_VERSION}
-    environment:
-      - FILE_NAME=${FILE_NAME}
-      - KERNEL_VERSION=${KERNEL_VERSION} # Passer la variable d'environnement
     volumes:
-      - ./start.sh:/start.sh
-    command: [ "/bin/bash", "/start.sh" ]
-    stdin_open: true
-    tty: true
+      - ./output:/output
+    command: cp /VolatilityProfile.zip /output/

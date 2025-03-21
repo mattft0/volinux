@@ -3,6 +3,7 @@ FROM ubuntu:20.04
 # Arguments passés par le script Bash
 ARG FILE_NAME
 ARG KERNEL_VERSION
+ARG DEBIAN_FRONTEND=noninteractive
 
 # Mise à jour et installation des outils nécessaires
 RUN apt-get update && apt-get install -y \
@@ -26,7 +27,7 @@ RUN apt-get update && \
 RUN python3 -m pip install --upgrade pip
 
 # Installation de Volatility 3
-RUN pip3 install volatility3 --break-system-packages
+RUN pip3 install volatility2 --break-system-packages
 
 # Clonage du dépôt et compilation avec symboles de débogage
 RUN git clone --depth=1 https://github.com/volatilityfoundation/volatility.git && \
@@ -40,3 +41,15 @@ RUN zip /VolatilityProfile.zip volatility/tools/linux/module.dwarf /boot/System.
 
 # Vérification
 RUN unzip -l /VolatilityProfile.zip || echo "Profile zip not created."
+
+RUN mv /VolatilityProfile.zip /volatility/volatility/plugins/olverlays/linux/
+
+# Création du répertoire de travail
+WORKDIR /analysis
+
+# Copie du dump mémoire dans le conteneur
+COPY ${FILE_NAME} /analysis/memory.dmp
+
+# Commande par défaut pour lancer Volatility
+CMD ["python3", "/volatility/vol.py", "-f", "/analysis/memory.dmp", "--plugins=/volatility/volatility/plugins/olverlays/linux/VolatilityProfile.zip", "linux_pslist"]
+

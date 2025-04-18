@@ -4,10 +4,10 @@ import "./App.css";
 
 function App() {
   const [file, setFile] = useState(null);
-  const [kernelVersion, setKernelVersion] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -19,40 +19,45 @@ function App() {
     }
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFile(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      setFile(file);
+      await handleUpload(file);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setKernelVersion("");
-    setError("");
-
-    if (!file) {
-      setError("Veuillez sélectionner un fichier dump.");
-      return;
+  const handleFileSelect = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFile(file);
+      await handleUpload(file);
     }
+  };
+
+  const handleUpload = async (fileToUpload) => {
+    setError("");
+    setUploadStatus(null);
+    setIsUploading(true);
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileToUpload);
 
-    setLoading(true);
     try {
-      const res = await axios.post("http://localhost:8000/upload_dump/", formData, {
+      const response = await axios.post("http://localhost:8000/upload_dump/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      setKernelVersion(res.data.kernel_version);
+      setUploadStatus(response.data);
     } catch (err) {
-      setError("Erreur lors de l'envoi du fichier.");
+      setError(err.response?.data?.error || "Une erreur est survenue lors de l'upload");
     } finally {
-      setLoading(false);
+      setIsUploading(false);
     }
   };
 
@@ -68,66 +73,31 @@ function App() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div
-            className={`border-3 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${dragActive
-              ? "border-cyan-500 bg-cyan-500/10"
-              : "border-slate-600 hover:border-slate-500"
-              }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
+        <div
+          className={`border-3 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${dragActive
+            ? "border-cyan-500 bg-cyan-500/10"
+            : "border-slate-600 hover:border-slate-500"
+            }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          <input
+            type="file"
+            accept="*/*"
+            onChange={handleFileSelect}
+            className="hidden"
+            id="file-upload"
+          />
+          <label
+            htmlFor="file-upload"
+            className="cursor-pointer flex flex-col items-center space-y-4"
           >
-            <input
-              type="file"
-              accept="*/*"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="hidden"
-              id="file-upload"
-            />
-            <label
-              htmlFor="file-upload"
-              className="cursor-pointer flex flex-col items-center space-y-4"
-            >
-              <svg
-                className={`w-16 h-16 transition-colors duration-300 ${dragActive ? "text-cyan-400" : "text-slate-400"
-                  }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-              <div className="text-center space-y-2">
-                <p className={`text-xl font-medium transition-colors duration-300 ${dragActive ? "text-cyan-400" : "text-slate-300"
-                  }`}>
-                  {file ? file.name : "Glissez-déposez votre fichier ici"}
-                </p>
-                <p className="text-sm text-slate-500">
-                  ou cliquez pour sélectionner un fichier
-                </p>
-              </div>
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !file}
-            className={`w-full py-4 px-6 rounded-xl font-medium transition-all duration-300 ${loading || !file
-              ? "bg-slate-700 cursor-not-allowed"
-              : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-lg hover:shadow-cyan-500/20"
-              }`}
-          >
-            {loading ? (
-              <div className="flex items-center justify-center space-x-3">
+            {isUploading ? (
+              <div className="flex flex-col items-center">
                 <svg
-                  className="animate-spin h-6 w-6 text-white"
+                  className="animate-spin h-12 w-12 text-cyan-400"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -146,24 +116,74 @@ function App() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                <span>Analyse en cours...</span>
+                <span className="text-cyan-400 mt-4">Analyse en cours...</span>
               </div>
             ) : (
-              "Uploader et analyser"
+              <>
+                <svg
+                  className={`w-16 h-16 transition-colors duration-300 ${dragActive ? "text-cyan-400" : "text-slate-400"
+                    }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+                <div className="text-center space-y-2">
+                  <p
+                    className={`text-xl font-medium transition-colors duration-300 ${dragActive ? "text-cyan-400" : "text-slate-300"
+                      }`}
+                  >
+                    {file ? file.name : "Glissez-déposez votre fichier ici"}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    ou cliquez pour sélectionner un fichier
+                  </p>
+                </div>
+              </>
             )}
-          </button>
-        </form>
-
-        {kernelVersion && (
-          <div className="mt-6 p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center animate-fade-in backdrop-blur-sm">
-            <p className="text-emerald-400 font-medium">Version du noyau détectée :</p>
-            <p className="text-2xl font-bold text-emerald-300 mt-2">{kernelVersion}</p>
-          </div>
-        )}
+          </label>
+        </div>
 
         {error && (
           <div className="mt-6 p-6 bg-rose-500/10 border border-rose-500/30 rounded-xl text-center animate-fade-in backdrop-blur-sm">
             <p className="text-rose-400">{error}</p>
+          </div>
+        )}
+
+        {uploadStatus && (
+          <div className="mt-8 space-y-6">
+            <div className="bg-slate-800/50 rounded-xl shadow-md p-6 backdrop-blur-sm border border-slate-700/50">
+              <h2 className="text-xl font-semibold mb-4 text-cyan-400">Informations système</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="font-medium text-slate-400">Distribution:</p>
+                  <p className="text-slate-300">
+                    {uploadStatus.distribution} {uploadStatus.distro_version}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-slate-400">Version du noyau:</p>
+                  <p className="text-slate-300">{uploadStatus.kernel_version}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <a
+                href="http://localhost:8000/results"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-cyan-500/20"
+              >
+                Voir les détails de l'analyse
+              </a>
+            </div>
           </div>
         )}
       </div>

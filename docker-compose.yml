@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: backend-dump-analyzer/Dockerfile
     ports:
-      - "8000:8000"
+      - "8281:8281"
     volumes:
       - ./backend-dump-analyzer:/app
     environment:
@@ -20,7 +20,7 @@ services:
     ports:
       - "8280:8280"
     environment:
-      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_API_URL=http://localhost:8281
     volumes:
       - ./frontend-dump-analyzer:/app
       - /app/node_modules

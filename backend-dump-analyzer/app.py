@@ -432,6 +432,22 @@ def show_results():
                 tr:hover {{
                     background-color: #f5f5f5;
                 }}
+                .filter-row {{
+                    background-color: #f8f9fa;
+                }}
+                .filter-row input {{
+                    width: 100%;
+                    padding: 4px;
+                    margin: 2px 0;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    box-sizing: border-box;
+                }}
+                .filter-row input:focus {{
+                    outline: none;
+                    border-color: #007bff;
+                    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+                }}
                 .info {{
                     margin-bottom: 20px;
                     padding: 10px;
@@ -443,6 +459,26 @@ def show_results():
                     word-wrap: break-word;
                 }}
             </style>
+            <script>
+                function filterTable(tableId) {{
+                    const table = document.getElementById(tableId);
+                    const filters = table.getElementsByClassName('filter-input');
+                    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+                    for (let i = 0; i < rows.length; i++) {{
+                        let showRow = true;
+                        for (let j = 0; j < filters.length; j++) {{
+                            const filterValue = filters[j].value.toLowerCase();
+                            const cellValue = rows[i].getElementsByTagName('td')[j].textContent.toLowerCase();
+                            if (!cellValue.includes(filterValue)) {{
+                                showRow = false;
+                                break;
+                            }}
+                        }}
+                        rows[i].style.display = showRow ? '' : 'none';
+                    }}
+                }}
+            </script>
         </head>
         <body>
             <div class="container">
@@ -471,13 +507,19 @@ def show_results():
     
 def generate_bash_html(commands, t):
     return f"""
-    <table>
+    <table id="bash-table">
         <thead>
             <tr>
                 <th>{t['pid']}</th>
                 <th>{t['process']}</th>
                 <th>{t['time']}</th>
                 <th>{t['command']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('bash-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('bash-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('bash-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('bash-table')" placeholder="Filter..."></th>
             </tr>
         </thead>
         <tbody>
@@ -495,7 +537,7 @@ def generate_bash_html(commands, t):
 
 def generate_envars_html(envars, t):
     return f"""
-    <table>
+    <table id="envars-table">
         <thead>
             <tr>
                 <th>{t['pid']}</th>
@@ -503,6 +545,13 @@ def generate_envars_html(envars, t):
                 <th>{t['comm']}</th>
                 <th>{t['key']}</th>
                 <th>{t['value']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('envars-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('envars-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('envars-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('envars-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('envars-table')" placeholder="Filter..."></th>
             </tr>
         </thead>
         <tbody>
@@ -521,11 +570,15 @@ def generate_envars_html(envars, t):
 
 def generate_boottime_html(boottime, t):
     return f"""
-    <table>
+    <table id="boottime-table">
         <thead>
             <tr>
                 <th>{t['time_ns']}</th>
                 <th>{t['boot_time']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('boottime-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('boottime-table')" placeholder="Filter..."></th>
             </tr>
         </thead>
         <tbody>
@@ -541,7 +594,7 @@ def generate_boottime_html(boottime, t):
 
 def generate_pagecache_files_html(files, t):
     return f"""
-    <table>
+    <table id="pagecache-table">
         <thead>
             <tr>
                 <th>{t['superblock_addr']}</th>
@@ -557,6 +610,21 @@ def generate_pagecache_files_html(files, t):
                 <th>{t['modification_time']}</th>
                 <th>{t['change_time']}</th>
                 <th>{t['file_path']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pagecache-table')" placeholder="Filter..."></th>
             </tr>
         </thead>
         <tbody>
@@ -583,7 +651,7 @@ def generate_pagecache_files_html(files, t):
 
 def generate_pslist_html(processes, t):
     return f"""
-    <table>
+    <table id="pslist-table">
         <thead>
             <tr>
                 <th>{t['offset']}</th>
@@ -593,6 +661,15 @@ def generate_pslist_html(processes, t):
                 <th>{t['comm']}</th>
                 <th>{t['creation_time']}</th>
                 <th>{t['file_output']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pslist-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pslist-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pslist-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pslist-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pslist-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pslist-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('pslist-table')" placeholder="Filter..."></th>
             </tr>
         </thead>
         <tbody>

@@ -9,6 +9,45 @@ function App() {
   const [uploadStatus, setUploadStatus] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isExecutingPlugin, setIsExecutingPlugin] = useState(false);
+  const [selectedPlugin, setSelectedPlugin] = useState("");
+  const [language, setLanguage] = useState("en");
+
+  const translations = {
+    en: {
+      title: "Linux Dump Analysis",
+      subtitle: "Upload a dump file to extract kernel version",
+      dragDrop: "Drag and drop your file here",
+      orClick: "or click to select a file",
+      analyzing: "Analyzing...",
+      systemInfo: "System Information",
+      distribution: "Distribution:",
+      kernelVersion: "Kernel Version:",
+      availablePlugins: "Available Plugins",
+      selectPlugin: "Select a plugin",
+      startAnalysis: "Start Analysis",
+      analysisInProgress: "Analysis in progress...",
+      uploadError: "An error occurred during upload",
+      pluginError: "An error occurred during plugin execution"
+    },
+    fr: {
+      title: "Analyse de Dump Linux",
+      subtitle: "Uploader un fichier dump pour extraire la version du noyau",
+      dragDrop: "Glissez-déposez votre fichier ici",
+      orClick: "ou cliquez pour sélectionner un fichier",
+      analyzing: "Analyse en cours...",
+      systemInfo: "Informations système",
+      distribution: "Distribution:",
+      kernelVersion: "Version du noyau:",
+      availablePlugins: "Plugins disponibles",
+      selectPlugin: "Sélectionnez un plugin",
+      startAnalysis: "Démarrer l'analyse",
+      analysisInProgress: "Analyse en cours...",
+      uploadError: "Une erreur est survenue lors de l'upload",
+      pluginError: "Une erreur est survenue lors de l'exécution du plugin"
+    }
+  };
+
+  const t = translations[language];
 
   const plugins = [
     { name: "Bash History", command: "linux.bash" },
@@ -66,7 +105,7 @@ function App() {
       });
       setUploadStatus(response.data);
     } catch (err) {
-      setError(err.response?.data?.error || "Une erreur est survenue lors de l'upload");
+      setError(err.response?.data?.error || t.uploadError);
     } finally {
       setIsUploading(false);
     }
@@ -79,11 +118,10 @@ function App() {
     try {
       const response = await axios.get(`http://localhost:8000/execute_plugin/${pluginCommand}`);
       if (response.data.success) {
-        // Redirect to results page
         window.open("http://localhost:8000/results", "_blank");
       }
     } catch (err) {
-      setError(err.response?.data?.error || "Une erreur est survenue lors de l'exécution du plugin");
+      setError(err.response?.data?.error || t.pluginError);
     } finally {
       setIsExecutingPlugin(false);
     }
@@ -92,12 +130,21 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-2xl bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 space-y-8 border border-slate-700/50">
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setLanguage(language === "en" ? "fr" : "en")}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors duration-300"
+          >
+            {language === "en" ? "FR" : "EN"}
+          </button>
+        </div>
+
         <div className="text-center space-y-4">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 text-transparent bg-clip-text">
-            Analyse de Dump Linux
+            {t.title}
           </h1>
           <p className="text-slate-400 text-lg">
-            Uploader un fichier dump pour extraire la version du noyau
+            {t.subtitle}
           </p>
         </div>
 
@@ -144,7 +191,7 @@ function App() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                <span className="text-cyan-400 mt-4">Analyse en cours...</span>
+                <span className="text-cyan-400 mt-4">{t.analyzing}</span>
               </div>
             ) : (
               <>
@@ -167,10 +214,10 @@ function App() {
                     className={`text-xl font-medium transition-colors duration-300 ${dragActive ? "text-cyan-400" : "text-slate-300"
                       }`}
                   >
-                    {file ? file.name : "Glissez-déposez votre fichier ici"}
+                    {file ? file.name : t.dragDrop}
                   </p>
                   <p className="text-sm text-slate-500">
-                    ou cliquez pour sélectionner un fichier
+                    {t.orClick}
                   </p>
                 </div>
               </>
@@ -187,34 +234,43 @@ function App() {
         {uploadStatus && (
           <div className="mt-8 space-y-6">
             <div className="bg-slate-800/50 rounded-xl shadow-md p-6 backdrop-blur-sm border border-slate-700/50">
-              <h2 className="text-xl font-semibold mb-4 text-cyan-400">Informations système</h2>
+              <h2 className="text-xl font-semibold mb-4 text-cyan-400">{t.systemInfo}</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="font-medium text-slate-400">Distribution:</p>
+                  <p className="font-medium text-slate-400">{t.distribution}</p>
                   <p className="text-slate-300">
                     {uploadStatus.distribution} {uploadStatus.distro_version}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-slate-400">Version du noyau:</p>
+                  <p className="font-medium text-slate-400">{t.kernelVersion}</p>
                   <p className="text-slate-300">{uploadStatus.kernel_version}</p>
                 </div>
               </div>
             </div>
 
             <div className="mt-8">
-              <h3 className="text-xl font-semibold mb-4 text-cyan-400">Plugins disponibles</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {plugins.map((plugin) => (
-                  <button
-                    key={plugin.command}
-                    onClick={() => handlePluginExecution(plugin.command)}
-                    disabled={isExecutingPlugin}
-                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {plugin.name}
-                  </button>
-                ))}
+              <h3 className="text-xl font-semibold mb-4 text-cyan-400">{t.availablePlugins}</h3>
+              <div className="space-y-4">
+                <select
+                  value={selectedPlugin}
+                  onChange={(e) => setSelectedPlugin(e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                >
+                  <option value="">{t.selectPlugin}</option>
+                  {plugins.map((plugin) => (
+                    <option key={plugin.command} value={plugin.command}>
+                      {plugin.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => selectedPlugin && handlePluginExecution(selectedPlugin)}
+                  disabled={isExecutingPlugin || !selectedPlugin}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isExecutingPlugin ? t.analysisInProgress : t.startAnalysis}
+                </button>
               </div>
             </div>
           </div>

@@ -18,6 +18,84 @@ UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+# Dictionnaire de traductions
+translations = {
+    'en': {
+        'title': 'Analysis Results - {command}',
+        'os': 'Operating System',
+        'kernel_version': 'Kernel Version',
+        'distribution': 'Distribution',
+        'distribution_version': 'Distribution Version',
+        'executed_command': 'Executed Command',
+        'pid': 'PID',
+        'process': 'Process',
+        'time': 'Time',
+        'command': 'Command',
+        'ppid': 'PPID',
+        'comm': 'COMM',
+        'key': 'KEY',
+        'value': 'VALUE',
+        'time_ns': 'Time NS',
+        'boot_time': 'Boot Time',
+        'superblock_addr': 'Superblock Address',
+        'mount_point': 'Mount Point',
+        'device': 'Device',
+        'inode_num': 'Inode Number',
+        'inode_addr': 'Inode Address',
+        'file_type': 'File Type',
+        'inode_pages': 'Inode Pages',
+        'cached_pages': 'Cached Pages',
+        'file_mode': 'File Mode',
+        'access_time': 'Access Time',
+        'modification_time': 'Modification Time',
+        'change_time': 'Change Time',
+        'file_path': 'File Path',
+        'offset': 'Offset',
+        'tid': 'TID',
+        'creation_time': 'Creation Time',
+        'file_output': 'File Output',
+        'switch_to_fr': 'Switch to French',
+        'switch_to_en': 'Switch to English'
+    },
+    'fr': {
+        'title': 'Résultats de l\'analyse - {command}',
+        'os': 'Système d\'exploitation',
+        'kernel_version': 'Version du noyau',
+        'distribution': 'Distribution',
+        'distribution_version': 'Version de la distribution',
+        'executed_command': 'Commande exécutée',
+        'pid': 'PID',
+        'process': 'Processus',
+        'time': 'Heure',
+        'command': 'Commande',
+        'ppid': 'PPID',
+        'comm': 'COMM',
+        'key': 'CLÉ',
+        'value': 'VALEUR',
+        'time_ns': 'Temps NS',
+        'boot_time': 'Temps de démarrage',
+        'superblock_addr': 'Adresse Superblock',
+        'mount_point': 'Point de montage',
+        'device': 'Périphérique',
+        'inode_num': 'Numéro Inode',
+        'inode_addr': 'Adresse Inode',
+        'file_type': 'Type de fichier',
+        'inode_pages': 'Pages Inode',
+        'cached_pages': 'Pages en cache',
+        'file_mode': 'Mode fichier',
+        'access_time': 'Heure d\'accès',
+        'modification_time': 'Heure de modification',
+        'change_time': 'Heure de changement',
+        'file_path': 'Chemin du fichier',
+        'offset': 'Offset',
+        'tid': 'TID',
+        'creation_time': 'Heure de création',
+        'file_output': 'Sortie fichier',
+        'switch_to_fr': 'Passer en français',
+        'switch_to_en': 'Passer en anglais'
+    }
+}
+
 def get_profile(dump_path):
     try:
         logger.debug(f"Analyse du fichier dump: {dump_path}")
@@ -272,18 +350,20 @@ def show_results():
         
         command = results.get('command', '')
         output = results.get('output', [])
+        lang = request.args.get('lang', 'en')
+        t = translations[lang]
         
         # Générer le HTML en fonction de la commande
         if command == "linux.bash":
-            html = generate_bash_html(output[1:])
+            html = generate_bash_html(output[1:], t)
         elif command == "linux.envars":
-            html = generate_envars_html(output[1:])
+            html = generate_envars_html(output[1:], t)
         elif command == "linux.boottime.Boottime":
-            html = generate_boottime_html(output[1:])
+            html = generate_boottime_html(output[1:], t)
         elif command == "linux.pagecache.Files":
-            html = generate_pagecache_files_html(output[1:])
+            html = generate_pagecache_files_html(output[1:], t)
         elif command == "linux.pslist.PsList":
-            html = generate_pslist_html(output[1:])
+            html = generate_pslist_html(output[1:], t)
         else:
             html = "<p>Format de sortie non supporté</p>"
         
@@ -291,7 +371,7 @@ def show_results():
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Résultats de l'analyse - {command}</title>
+            <title>{t['title'].format(command=command)}</title>
             <style>
                 body {{
                     font-family: Arial, sans-serif;
@@ -306,10 +386,34 @@ def show_results():
                     border-radius: 5px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 }}
-                h1 {{
-                    color: #333;
+                .header {{
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
                     border-bottom: 1px solid #eee;
                     padding-bottom: 10px;
+                }}
+                h1 {{
+                    color: #333;
+                    margin: 0;
+                }}
+                .language-switch {{
+                    margin-left: 20px;
+                }}
+                .language-switch button {{
+                    padding: 8px 16px;
+                    background-color: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: background-color 0.3s ease;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }}
+                .language-switch button:hover {{
+                    background-color: #0056b3;
                 }}
                 table {{
                     width: 100%;
@@ -342,13 +446,20 @@ def show_results():
         </head>
         <body>
             <div class="container">
-                <h1>Résultats de l'analyse - {command}</h1>
+                <div class="header">
+                    <h1>{t['title'].format(command=command)}</h1>
+                    <div class="language-switch">
+                        <a href="?lang={'fr' if lang == 'en' else 'en'}">
+                            <button>{t['switch_to_fr'] if lang == 'en' else t['switch_to_en']}</button>
+                        </a>
+                    </div>
+                </div>
                 <div class="info">
-                    <p><strong>Système d'exploitation:</strong> {results.get('os', 'N/A')}</p>
-                    <p><strong>Version du noyau:</strong> {results.get('kernel_version', 'N/A')}</p>
-                    <p><strong>Distribution:</strong> {results.get('distribution', 'N/A')}</p>
-                    <p><strong>Version de la distribution:</strong> {results.get('distribution_version', 'N/A')}</p>
-                    <p><strong>Commande exécutée:</strong> {command}</p>
+                    <p><strong>{t['os']}:</strong> {results.get('os', 'N/A')}</p>
+                    <p><strong>{t['kernel_version']}:</strong> {results.get('kernel_version', 'N/A')}</p>
+                    <p><strong>{t['distribution']}:</strong> {results.get('distribution', 'N/A')}</p>
+                    <p><strong>{t['distribution_version']}:</strong> {results.get('distribution_version', 'N/A')}</p>
+                    <p><strong>{t['executed_command']}:</strong> {command}</p>
                 </div>
                 {html}
             </div>
@@ -356,17 +467,17 @@ def show_results():
         </html>
         """
     except Exception as e:
-        return f"Erreur: {str(e)}"
+        return f"Error: {str(e)}"
     
-def generate_bash_html(commands):
+def generate_bash_html(commands, t):
     return f"""
     <table>
         <thead>
             <tr>
-                <th>PID</th>
-                <th>Process</th>
-                <th>Time</th>
-                <th>Command</th>
+                <th>{t['pid']}</th>
+                <th>{t['process']}</th>
+                <th>{t['time']}</th>
+                <th>{t['command']}</th>
             </tr>
         </thead>
         <tbody>
@@ -382,16 +493,16 @@ def generate_bash_html(commands):
     </table>
     """
 
-def generate_envars_html(envars):
+def generate_envars_html(envars, t):
     return f"""
     <table>
         <thead>
             <tr>
-                <th>PID</th>
-                <th>PPID</th>
-                <th>COMM</th>
-                <th>KEY</th>
-                <th>VALUE</th>
+                <th>{t['pid']}</th>
+                <th>{t['ppid']}</th>
+                <th>{t['comm']}</th>
+                <th>{t['key']}</th>
+                <th>{t['value']}</th>
             </tr>
         </thead>
         <tbody>
@@ -408,13 +519,13 @@ def generate_envars_html(envars):
     </table>
     """
 
-def generate_boottime_html(boottime):
+def generate_boottime_html(boottime, t):
     return f"""
     <table>
         <thead>
             <tr>
-                <th>Time NS</th>
-                <th>Boot Time</th>
+                <th>{t['time_ns']}</th>
+                <th>{t['boot_time']}</th>
             </tr>
         </thead>
         <tbody>
@@ -428,24 +539,24 @@ def generate_boottime_html(boottime):
     </table>
     """
 
-def generate_pagecache_files_html(files):
+def generate_pagecache_files_html(files, t):
     return f"""
     <table>
         <thead>
             <tr>
-                <th>Superblock Address</th>
-                <th>Mount Point</th>
-                <th>Device</th>
-                <th>Inode Number</th>
-                <th>Inode Address</th>
-                <th>File Type</th>
-                <th>Inode Pages</th>
-                <th>Cached Pages</th>
-                <th>File Mode</th>
-                <th>Access Time</th>
-                <th>Modification Time</th>
-                <th>Change Time</th>
-                <th>File Path</th>
+                <th>{t['superblock_addr']}</th>
+                <th>{t['mount_point']}</th>
+                <th>{t['device']}</th>
+                <th>{t['inode_num']}</th>
+                <th>{t['inode_addr']}</th>
+                <th>{t['file_type']}</th>
+                <th>{t['inode_pages']}</th>
+                <th>{t['cached_pages']}</th>
+                <th>{t['file_mode']}</th>
+                <th>{t['access_time']}</th>
+                <th>{t['modification_time']}</th>
+                <th>{t['change_time']}</th>
+                <th>{t['file_path']}</th>
             </tr>
         </thead>
         <tbody>
@@ -470,18 +581,18 @@ def generate_pagecache_files_html(files):
     </table>
     """
 
-def generate_pslist_html(processes):
+def generate_pslist_html(processes, t):
     return f"""
     <table>
         <thead>
             <tr>
-                <th>Offset</th>
-                <th>PID</th>
-                <th>TID</th>
-                <th>PPID</th>
-                <th>Comm</th>
-                <th>Creation Time</th>
-                <th>File Output</th>
+                <th>{t['offset']}</th>
+                <th>{t['pid']}</th>
+                <th>{t['tid']}</th>
+                <th>{t['ppid']}</th>
+                <th>{t['comm']}</th>
+                <th>{t['creation_time']}</th>
+                <th>{t['file_output']}</th>
             </tr>
         </thead>
         <tbody>
@@ -496,26 +607,6 @@ def generate_pslist_html(processes):
                 <td>{p['file_output']}</td>
             </tr>
             ''' for p in processes)}
-        </tbody>
-    </table>
-    """
-    return f"""
-    <table>
-        <thead>
-            <tr>
-                <th>Périphérique</th>
-                <th>Point de montage</th>
-                <th>Type</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(f'''
-            <tr>
-                <td>{m['device']}</td>
-                <td>{m['mountpoint']}</td>
-                <td>{m['type']}</td>
-            </tr>
-            ''' for m in mounts)}
         </tbody>
     </table>
     """

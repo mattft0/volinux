@@ -98,7 +98,67 @@ def get_process_list(dump_path, command="linux.pslist"):
             return None, f"Erreur lors de l'exécution de Volatility3: {result.stderr}"
         
         # Analyser la sortie en fonction de la commande
-        if command == "linux.pslist":
+        if command == "linux.bash":
+            commands = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        commands.append({
+                            'pid': parts[0],
+                            'process': parts[1],
+                            'time': ' '.join(parts[2:5]),
+                            'command': ' '.join(parts[5:])
+                        })
+            return commands, None
+        elif command == "linux.envars":
+            envars = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 5:
+                        envars.append({
+                            'pid': parts[0],
+                            'ppid': parts[1],
+                            'comm': parts[2],
+                            'key': parts[3],
+                            'value': parts[4]
+                        })
+            return envars, None
+        elif command == "linux.boottime.Boottime":
+            boottime = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 2:
+                        boottime.append({
+                            'time_ns': parts[0],
+                            'boot_time': ' '.join(parts[1:])
+                        })
+            return boottime, None
+        elif command == "linux.pagecache.Files":
+            files = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        files.append({
+                            'superblock_addr': parts[0],
+                            'mount_point': parts[1],
+                            'device': parts[2],
+                            'inode_num': parts[3],
+                            'inode_addr': parts[4],
+                            'file_type': parts[5],
+                            'inode_pages': parts[6],
+                            'cached_pages': parts[7],
+                            'file_mode': parts[8],
+                            'access_time': parts[9:12],
+                            'modification_time': parts[12:15],
+                            'change_time': parts[15:18],
+                            'file_path': ' '.join(parts[18:])
+                        })
+            return files, None
+        elif command == "linux.pslist.PsList":
             processes = []
             for line in result.stdout.split('\n'):
                 if line.strip() and not line.startswith('Volatility'):
@@ -110,121 +170,10 @@ def get_process_list(dump_path, command="linux.pslist"):
                             'tid': parts[2],
                             'ppid': parts[3],
                             'comm': parts[4],
-                            'creation_time': parts[5],
-                            'file_output': parts[6]
+                            'creation_time': ' '.join(parts[5:8]),
+                            'file_output': parts[8]
                         })
             return processes, None
-        elif command == "linux.pstree":
-            processes = []
-            for line in result.stdout.split('\n'):
-                if line.strip() and not line.startswith('Volatility'):
-                    parts = line.split()
-                    if len(parts) >= 4:
-                        processes.append({
-                            'pid': parts[0],
-                            'ppid': parts[1],
-                            'name': parts[2],
-                            'tree': parts[3]
-                        })
-            return processes, None
-        elif command == "linux.lsof":
-            files = []
-            for line in result.stdout.split('\n'):
-                if line.strip() and not line.startswith('Volatility'):
-                    parts = line.split()
-                    if len(parts) >= 4:
-                        files.append({
-                            'pid': parts[0],
-                            'fd': parts[1],
-                            'path': parts[2],
-                            'type': parts[3]
-                        })
-            return files, None
-        elif command == "linux.netstat":
-            connections = []
-            for line in result.stdout.split('\n'):
-                if line.strip() and not line.startswith('Volatility'):
-                    parts = line.split()
-                    if len(parts) >= 6:
-                        connections.append({
-                            'pid': parts[0],
-                            'protocol': parts[1],
-                            'local_addr': parts[2],
-                            'remote_addr': parts[3],
-                            'state': parts[4],
-                            'process': parts[5]
-                        })
-            return connections, None
-        elif command == "linux.bash":
-            commands = []
-            for line in result.stdout.split('\n'):
-                if line.strip() and not line.startswith('Volatility'):
-                    parts = line.split()
-                    if len(parts) >= 3:
-                        commands.append({
-                            'pid': parts[0],
-                            'time': parts[1],
-                            'command': ' '.join(parts[2:])
-                        })
-            return commands, None
-        elif command == "linux.check_modules":
-            modules = []
-            for line in result.stdout.split('\n'):
-                if line.strip() and not line.startswith('Volatility'):
-                    parts = line.split()
-                    if len(parts) >= 3:
-                        modules.append({
-                            'name': parts[0],
-                            'size': parts[1],
-                            'path': parts[2]
-                        })
-            return modules, None
-        elif command == "linux.check_syscall":
-            syscalls = []
-            for line in result.stdout.split('\n'):
-                if line.strip() and not line.startswith('Volatility'):
-                    parts = line.split()
-                    if len(parts) >= 2:
-                        syscalls.append({
-                            'address': parts[0],
-                            'name': parts[1]
-                        })
-            return syscalls, None
-        elif command == "linux.check_tty":
-            ttys = []
-            for line in result.stdout.split('\n'):
-                if line.strip() and not line.startswith('Volatility'):
-                    parts = line.split()
-                    if len(parts) >= 3:
-                        ttys.append({
-                            'name': parts[0],
-                            'pid': parts[1],
-                            'command': ' '.join(parts[2:])
-                        })
-            return ttys, None
-        elif command == "linux.elfs":
-            elfs = []
-            for line in result.stdout.split('\n'):
-                if line.strip() and not line.startswith('Volatility'):
-                    parts = line.split()
-                    if len(parts) >= 2:
-                        elfs.append({
-                            'path': parts[0],
-                            'type': parts[1]
-                        })
-            return elfs, None
-        elif command == "linux.mount":
-            mounts = []
-            for line in result.stdout.split('\n'):
-                if line.strip() and not line.startswith('Volatility'):
-                    parts = line.split()
-                    if len(parts) >= 3:
-                        mounts.append({
-                            'device': parts[0],
-                            'mountpoint': parts[1],
-                            'type': parts[2]
-                        })
-            return mounts, None
         else:
             return None, "Commande non supportée"
     except Exception as e:
@@ -258,15 +207,9 @@ def upload_dump():
                 logger.error(f"Erreur lors de l'analyse: {error}")
                 return jsonify({'error': error}), 400
             
-            # Récupérer la liste des processus
-            processes, process_error = get_process_list(temp_file.name)
-            if process_error:
-                logger.error(f"Erreur lors de l'analyse des processus: {process_error}")
-                return jsonify({'error': process_error}), 400
-            
-            # Nettoyer le fichier temporaire
-            os.unlink(temp_file.name)
-            logger.debug("Fichier temporaire supprimé")
+            # Sauvegarder le chemin du fichier temporaire pour une utilisation ultérieure
+            with open('last_dump_path.txt', 'w') as f:
+                f.write(temp_file.name)
             
             if profile_info:
                 # Sauvegarder les résultats dans last_analysis.json
@@ -275,8 +218,8 @@ def upload_dump():
                     'kernel_version': profile_info['kernel_version'],
                     'distribution': profile_info['distribution'],
                     'distribution_version': profile_info['distro_version'],
-                    'command': 'linux.pslist',
-                    'output': processes
+                    'command': 'banners.Banners',
+                    'output': []
                 }
                 
                 with open('last_analysis.json', 'w') as f:
@@ -295,36 +238,52 @@ def upload_dump():
             'error': f'Erreur lors du traitement du fichier : {str(e)}'
         }), 500
 
+@app.route('/execute_plugin/<plugin_name>', methods=['GET'])
+def execute_plugin(plugin_name):
+    try:
+        # Lire le chemin du dernier dump analysé
+        with open('last_dump_path.txt', 'r') as f:
+            dump_path = f.read().strip()
+        
+        # Exécuter le plugin spécifié
+        output, error = get_process_list(dump_path, plugin_name)
+        if error:
+            return jsonify({'error': error}), 400
+        
+        # Mettre à jour last_analysis.json avec les nouveaux résultats
+        with open('last_analysis.json', 'r') as f:
+            results = json.load(f)
+        
+        results['command'] = plugin_name
+        results['output'] = output
+        
+        with open('last_analysis.json', 'w') as f:
+            json.dump(results, f)
+        
+        return jsonify({'success': True, 'output': output})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/results', methods=['GET'])
 def show_results():
     try:
         with open('last_analysis.json', 'r') as f:
             results = json.load(f)
         
-        command = results.get('command', 'linux.pslist')
+        command = results.get('command', '')
         output = results.get('output', [])
         
         # Générer le HTML en fonction de la commande
-        if command == "linux.pslist":
-            html = generate_pslist_html(output)
-        elif command == "linux.pstree":
-            html = generate_pstree_html(output)
-        elif command == "linux.lsof":
-            html = generate_lsof_html(output)
-        elif command == "linux.netstat":
-            html = generate_netstat_html(output)
-        elif command == "linux.bash":
-            html = generate_bash_html(output)
-        elif command == "linux.check_modules":
-            html = generate_modules_html(output)
-        elif command == "linux.check_syscall":
-            html = generate_syscall_html(output)
-        elif command == "linux.check_tty":
-            html = generate_tty_html(output)
-        elif command == "linux.elfs":
-            html = generate_elfs_html(output)
-        elif command == "linux.mount":
-            html = generate_mount_html(output)
+        if command == "linux.bash":
+            html = generate_bash_html(output[1:])
+        elif command == "linux.envars":
+            html = generate_envars_html(output[1:])
+        elif command == "linux.boottime.Boottime":
+            html = generate_boottime_html(output[1:])
+        elif command == "linux.pagecache.Files":
+            html = generate_pagecache_files_html(output[1:])
+        elif command == "linux.pslist.PsList":
+            html = generate_pslist_html(output[1:])
         else:
             html = "<p>Format de sortie non supporté</p>"
         
@@ -332,7 +291,7 @@ def show_results():
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Résultats de l'analyse</title>
+            <title>Résultats de l'analyse - {command}</title>
             <style>
                 body {{
                     font-family: Arial, sans-serif;
@@ -375,11 +334,15 @@ def show_results():
                     background-color: #e9ecef;
                     border-radius: 4px;
                 }}
+                pre {{
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                }}
             </style>
         </head>
         <body>
             <div class="container">
-                <h1>Résultats de l'analyse</h1>
+                <h1>Résultats de l'analyse - {command}</h1>
                 <div class="info">
                     <p><strong>Système d'exploitation:</strong> {results.get('os', 'N/A')}</p>
                     <p><strong>Version du noyau:</strong> {results.get('kernel_version', 'N/A')}</p>
@@ -394,19 +357,131 @@ def show_results():
         """
     except Exception as e:
         return f"Erreur: {str(e)}"
+    
+def generate_bash_html(commands):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>PID</th>
+                <th>Process</th>
+                <th>Time</th>
+                <th>Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{c['pid']}</td>
+                <td>{c['process']}</td>
+                <td>{c['time']}</td>
+                <td>{c['command']}</td>
+            </tr>
+            ''' for c in commands)}
+        </tbody>
+    </table>
+    """
+
+def generate_envars_html(envars):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>PID</th>
+                <th>PPID</th>
+                <th>COMM</th>
+                <th>KEY</th>
+                <th>VALUE</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{e['pid']}</td>
+                <td>{e['ppid']}</td>
+                <td>{e['comm']}</td>
+                <td>{e['key']}</td>
+                <td>{e['value']}</td>
+            </tr>
+            ''' for e in envars)}
+        </tbody>
+    </table>
+    """
+
+def generate_boottime_html(boottime):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>Time NS</th>
+                <th>Boot Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{b['time_ns']}</td>
+                <td>{b['boot_time']}</td>
+            </tr>
+            ''' for b in boottime)}
+        </tbody>
+    </table>
+    """
+
+def generate_pagecache_files_html(files):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>Superblock Address</th>
+                <th>Mount Point</th>
+                <th>Device</th>
+                <th>Inode Number</th>
+                <th>Inode Address</th>
+                <th>File Type</th>
+                <th>Inode Pages</th>
+                <th>Cached Pages</th>
+                <th>File Mode</th>
+                <th>Access Time</th>
+                <th>Modification Time</th>
+                <th>Change Time</th>
+                <th>File Path</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{f['superblock_addr']}</td>
+                <td>{f['mount_point']}</td>
+                <td>{f['device']}</td>
+                <td>{f['inode_num']}</td>
+                <td>{f['inode_addr']}</td>
+                <td>{f['file_type']}</td>
+                <td>{f['inode_pages']}</td>
+                <td>{f['cached_pages']}</td>
+                <td>{f['file_mode']}</td>
+                <td>{' '.join(f['access_time'])}</td>
+                <td>{' '.join(f['modification_time'])}</td>
+                <td>{' '.join(f['change_time'])}</td>
+                <td>{f['file_path']}</td>
+            </tr>
+            ''' for f in files)}
+        </tbody>
+    </table>
+    """
 
 def generate_pslist_html(processes):
     return f"""
     <table>
         <thead>
             <tr>
-                <th>OFFSET (V)</th>
+                <th>Offset</th>
                 <th>PID</th>
                 <th>TID</th>
                 <th>PPID</th>
-                <th>COMM</th>
-                <th>CREATION TIME</th>
-                <th>File output</th>
+                <th>Comm</th>
+                <th>Creation Time</th>
+                <th>File Output</th>
             </tr>
         </thead>
         <tbody>
@@ -424,190 +499,6 @@ def generate_pslist_html(processes):
         </tbody>
     </table>
     """
-
-def generate_pstree_html(processes):
-    return f"""
-    <table>
-        <thead>
-            <tr>
-                <th>PID</th>
-                <th>PPID</th>
-                <th>Nom</th>
-                <th>Arbre</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(f'''
-            <tr>
-                <td>{p['pid']}</td>
-                <td>{p['ppid']}</td>
-                <td>{p['name']}</td>
-                <td>{p['tree']}</td>
-            </tr>
-            ''' for p in processes)}
-        </tbody>
-    </table>
-    """
-
-def generate_lsof_html(files):
-    return f"""
-    <table>
-        <thead>
-            <tr>
-                <th>PID</th>
-                <th>FD</th>
-                <th>Chemin</th>
-                <th>Type</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(f'''
-            <tr>
-                <td>{f['pid']}</td>
-                <td>{f['fd']}</td>
-                <td>{f['path']}</td>
-                <td>{f['type']}</td>
-            </tr>
-            ''' for f in files)}
-        </tbody>
-    </table>
-    """
-
-def generate_netstat_html(connections):
-    return f"""
-    <table>
-        <thead>
-            <tr>
-                <th>PID</th>
-                <th>Protocole</th>
-                <th>Adresse locale</th>
-                <th>Adresse distante</th>
-                <th>État</th>
-                <th>Processus</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(f'''
-            <tr>
-                <td>{c['pid']}</td>
-                <td>{c['protocol']}</td>
-                <td>{c['local_addr']}</td>
-                <td>{c['remote_addr']}</td>
-                <td>{c['state']}</td>
-                <td>{c['process']}</td>
-            </tr>
-            ''' for c in connections)}
-        </tbody>
-    </table>
-    """
-
-def generate_bash_html(commands):
-    return f"""
-    <table>
-        <thead>
-            <tr>
-                <th>PID</th>
-                <th>Heure</th>
-                <th>Commande</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(f'''
-            <tr>
-                <td>{c['pid']}</td>
-                <td>{c['time']}</td>
-                <td>{c['command']}</td>
-            </tr>
-            ''' for c in commands)}
-        </tbody>
-    </table>
-    """
-
-def generate_modules_html(modules):
-    return f"""
-    <table>
-        <thead>
-            <tr>
-                <th>Nom</th>
-                <th>Taille</th>
-                <th>Chemin</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(f'''
-            <tr>
-                <td>{m['name']}</td>
-                <td>{m['size']}</td>
-                <td>{m['path']}</td>
-            </tr>
-            ''' for m in modules)}
-        </tbody>
-    </table>
-    """
-
-def generate_syscall_html(syscalls):
-    return f"""
-    <table>
-        <thead>
-            <tr>
-                <th>Adresse</th>
-                <th>Nom</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(f'''
-            <tr>
-                <td>{s['address']}</td>
-                <td>{s['name']}</td>
-            </tr>
-            ''' for s in syscalls)}
-        </tbody>
-    </table>
-    """
-
-def generate_tty_html(ttys):
-    return f"""
-    <table>
-        <thead>
-            <tr>
-                <th>Nom</th>
-                <th>PID</th>
-                <th>Commande</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(f'''
-            <tr>
-                <td>{t['name']}</td>
-                <td>{t['pid']}</td>
-                <td>{t['command']}</td>
-            </tr>
-            ''' for t in ttys)}
-        </tbody>
-    </table>
-    """
-
-def generate_elfs_html(elfs):
-    return f"""
-    <table>
-        <thead>
-            <tr>
-                <th>Chemin</th>
-                <th>Type</th>
-            </tr>
-        </thead>
-        <tbody>
-            {''.join(f'''
-            <tr>
-                <td>{e['path']}</td>
-                <td>{e['type']}</td>
-            </tr>
-            ''' for e in elfs)}
-        </tbody>
-    </table>
-    """
-
-def generate_mount_html(mounts):
     return f"""
     <table>
         <thead>
@@ -630,4 +521,4 @@ def generate_mount_html(mounts):
     """
 
 if __name__ == '__main__':
-    app.run(port=8281, debug=True) 
+    app.run(port=8000, debug=True) 

@@ -8,6 +8,17 @@ function App() {
   const [dragActive, setDragActive] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isExecutingPlugin, setIsExecutingPlugin] = useState(false);
+
+  const plugins = [
+    { name: "Bash History", command: "linux.bash" },
+    { name: "Environment Variables", command: "linux.envars" },
+    { name: "IP Addresses", command: "linux.ip.Addr" },
+    { name: "Networks Infos", command: "linux.ip.Link" },
+    { name: "Boottime Infos", command: "linux.boottime.Boottime" },
+    { name: "List File in Memory", command: "linux.pagecache.Files" },
+    { name: "Process List", command: "linux.pslist.PsList" }
+  ];
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -48,7 +59,7 @@ function App() {
     formData.append("file", fileToUpload);
 
     try {
-      const response = await axios.post("http://localhost:8281/upload_dump/", formData, {
+      const response = await axios.post("http://localhost:8000/upload_dump/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -58,6 +69,23 @@ function App() {
       setError(err.response?.data?.error || "Une erreur est survenue lors de l'upload");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handlePluginExecution = async (pluginCommand) => {
+    setError("");
+    setIsExecutingPlugin(true);
+
+    try {
+      const response = await axios.get(`http://localhost:8000/execute_plugin/${pluginCommand}`);
+      if (response.data.success) {
+        // Redirect to results page
+        window.open("http://localhost:8000/results", "_blank");
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || "Une erreur est survenue lors de l'exécution du plugin");
+    } finally {
+      setIsExecutingPlugin(false);
     }
   };
 
@@ -174,15 +202,20 @@ function App() {
               </div>
             </div>
 
-            <div className="text-center">
-              <a
-                href="http://localhost:8281/results"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-cyan-500/20"
-              >
-                Voir les détails de l'analyse
-              </a>
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4 text-cyan-400">Plugins disponibles</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {plugins.map((plugin) => (
+                  <button
+                    key={plugin.command}
+                    onClick={() => handlePluginExecution(plugin.command)}
+                    disabled={isExecutingPlugin}
+                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {plugin.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

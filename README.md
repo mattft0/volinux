@@ -1,183 +1,77 @@
-# Volinux - Analyse de Dumps Mémoire Linux
+# Volinux - Linux Memory Dump Analyzer
 
-Volinux est une plateforme web pour l'analyse de dumps mémoire Linux, offrant une interface utilisateur intuitive et des fonctionnalités avancées d'analyse.
+Volinux is a modern web-based platform for analyzing Linux memory dumps, combining powerful memory forensics capabilities with an intuitive user interface.
 
-## Fonctionnalités
+## 🚀 Features
 
-- Interface web conviviale
-- Upload sécurisé de dumps mémoire
-- Détection automatique du profil
-- Validation humaine des profils
-- Analyse via plugins Volatility
-- Génération de rapports détaillés
-- Suppression automatique des dumps après analyse
+- Modern, responsive web interface with multilingual support (EN/FR)
+- Automatic Linux kernel version and distribution detection
+- Execute various Volatility3 plugins for in-depth memory forensics
+- Interactive results with filtering capabilities
+- Docker-based deployment for easy setup
 
-## Architecture
+## 🔍 Supported Analysis Types
+
+- **Bash History** (`linux.bash`) - View command history from bash sessions
+- **Environment Variables** (`linux.envars`) - Examine environment variables
+- **IP Addresses** (`linux.ip.Addr`) - List network address configurations
+- **Network Interfaces** (`linux.ip.Link`) - Examine network interfaces
+- **Boot Time Information** (`linux.boottime.Boottime`) - View system boot time
+- **Files in Memory** (`linux.pagecache.Files`) - Examine cached files
+- **Process List** (`linux.pslist.PsList`) - View running processes
+
+## 🛠️ Tech Stack
 
 ### Frontend
 - React 19.1.0
 - Tailwind CSS 3.3.0
-- Axios pour les requêtes HTTP
-- Testing Library pour les tests
-- PostCSS pour le traitement CSS
+- Axios for API communication
+- Modern JavaScript features and responsive design
 
 ### Backend
-- Flask (Python)
-- Flask-CORS pour la gestion CORS
-- Volatility pour l'analyse des dumps mémoire
-- Logging natif Python pour la gestion des logs
+- Flask 3.0.0 (Python)
+- Flask-CORS for cross-origin requests
+- Volatility3 2.11.0 for memory forensics
+- Gunicorn for production deployment
 
-### Outils de Développement
-- Node.js 18+ pour le frontend
-- Python 3.9+ pour le backend
-- Nginx pour le déploiement
+## 🚀 Getting Started
 
-## Installation
+### Prerequisites
+- Docker and Docker Compose
 
-### Prérequis
+### Quick Start
 
-- Docker et Docker Compose
-- Node.js 18+
-- Python 3.9+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/volinux.git
+   cd volinux
+   ```
 
-### Développement local
+2. Start the application using Docker Compose:
 
-1. Cloner le repository
-```bash
-git clone https://github.com/votre-org/volinux.git
-cd volinux
-```
+    ```bash
+    docker-compose up
+    ```
 
-2. Installer les dépendances
-```bash
-# Backend
-cd backend-dump-analyzer
-python -m venv venv
-source venv/bin/activate  # Sur Windows: venv\Scripts\activate
-pip install -r requirements.txt
+3. Access the application:
+    - http://localhsot:3000
 
-# Frontend
-cd frontend-dump-analyzer
-npm install
-```
+## 📋 Usage
 
-3. Lancer les services
-```bash
-# Backend
-cd backend-dump-analyzer
-uvicorn app:app --reload
+1. Upload a Linux memory dump file via the web interface
 
-# Frontend
-cd frontend-dump-analyzer
-npm run dev
-```
+2. The system will automatically detect the kernel version and distribution
 
-4. Accéder à l'application
-- Frontend : http://localhost:3000
-- Backend : http://localhost:8000
-- API Docs : http://localhost:8000/docs
+3. Select one of the available plugins to analyze specific aspects of the memory dump
 
-## Déploiement sur Nginx
+4. View and filter the detailed results in a new browser tab
 
-### Prérequis
 
-- Serveur Linux avec Nginx installé
-- Docker et Docker Compose
-- Certbot (pour HTTPS)
+## 📄 License
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### Configuration Nginx
+## 👥 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. Créer un fichier de configuration pour votre site :
-```bash
-sudo nano /etc/nginx/sites-available/volinux
-```
-
-2. Ajouter la configuration suivante :
-```nginx
-server {
-    listen 80;
-    server_name votre-domaine.com;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    location /api {
-        proxy_pass http://localhost:8000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-3. Activer le site :
-```bash
-sudo ln -s /etc/nginx/sites-available/volinux /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
-```
-
-4. Configurer HTTPS avec Certbot :
-```bash
-sudo certbot --nginx -d votre-domaine.com
-```
-
-### Déploiement de l'application
-
-1. Construire le frontend pour la production :
-```bash
-cd frontend-dump-analyzer
-npm run build
-```
-
-2. Configurer le backend pour la production :
-```bash
-cd backend-dump-analyzer
-# Configurer les variables d'environnement
-cp .env.example .env
-# Modifier les variables selon votre environnement
-```
-
-3. Lancer les services :
-```bash
-# Backend
-cd backend-dump-analyzer
-gunicorn app:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-
-# Frontend (servir les fichiers statiques)
-cd frontend-dump-analyzer/build
-python -m http.server 3000
-```
-
-### Variables d'environnement
-
-Créer un fichier `.env` dans le dossier backend-dump-analyzer avec les variables suivantes :
-```env
-NODE_ENV=production
-API_URL=https://votre-domaine.com/api
-```
-
-## Structure du Projet
-
-```
-volinux/
-├── frontend-dump-analyzer/    # Application React
-│   ├── src/                   # Code source React
-│   ├── public/                # Fichiers statiques
-│   └── package.json           # Dépendances Node.js
-└── backend-dump-analyzer/     # API FastAPI
-    ├── app.py                 # Application principale
-    └── venv/                  # Environnement virtuel Python
-```
-
-## Licence
-
-MIT License - Voir le fichier LICENSE pour plus de détails.
+## 📞 Contact
+For questions or support, please open an issue in the GitHub repository.

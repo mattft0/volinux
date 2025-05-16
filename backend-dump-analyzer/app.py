@@ -55,7 +55,17 @@ translations = {
         'creation_time': 'Creation Time',
         'file_output': 'File Output',
         'switch_to_fr': 'Switch to French',
-        'switch_to_en': 'Switch to English'
+        'switch_to_en': 'Switch to English',
+        'netns': 'NetNS',
+        'index': 'Index',
+        'interface': 'Interface',
+        'mac': 'MAC Address',
+        'promiscuous': 'Promiscuous',
+        'ip': 'IP Address',
+        'prefix': 'Prefix',
+        'scope': 'Scope',
+        'type': 'Type',
+        'state': 'State'
     },
     'fr': {
         'title': 'Résultats de l\'analyse - {command}',
@@ -102,7 +112,7 @@ def get_profile(dump_path):
         
         # Exécuter la commande Volatility3 pour récupérer le profil
         cmd = [
-            'vol',  # Utiliser la commande 'vol' directement
+            'python3', '/opt/volatility3/vol.py',  # Utiliser la commande 'vol' directement
             '--remote-isf-url', 'https://github.com/Abyss-W4tcher/volatility3-symbols/raw/master/banners/banners.json',
             '-f', dump_path,
             'banners.Banners'
@@ -159,7 +169,7 @@ def get_process_list(dump_path, command="linux.pslist"):
         
         # Exécuter la commande Volatility3 pour récupérer la liste des processus
         cmd = [
-            'vol',
+            'python3', '/opt/volatility3/vol.py',
             '--remote-isf-url', 'https://github.com/Abyss-W4tcher/volatility3-symbols/raw/master/banners/banners.json',
             '-f', dump_path,
             command
@@ -252,6 +262,41 @@ def get_process_list(dump_path, command="linux.pslist"):
                             'file_output': parts[8]
                         })
             return processes, None
+        elif command == "linux.ip.Addr":
+            ip_addresses = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    # Create a base structure with default values
+                    entry = {
+                        'netns': 'N/A',
+                        'index': 'N/A',
+                        'interface': 'N/A',
+                        'mac': 'N/A',
+                        'promiscuous': 'N/A',
+                        'ip': 'N/A',
+                        'prefix': 'N/A',
+                        'scope': 'N/A',
+                        'type': 'N/A',
+                        'state': 'N/A'
+                    }
+                    
+                    # Fill in values from the line if they exist
+                    if len(parts) > 0: entry['netns'] = parts[0]
+                    if len(parts) > 1: entry['index'] = parts[1]
+                    if len(parts) > 2: entry['interface'] = parts[2]
+                    if len(parts) > 3: entry['mac'] = parts[3]
+                    if len(parts) > 4: entry['promiscuous'] = parts[4]
+                    if len(parts) > 5: entry['ip'] = parts[5]
+                    if len(parts) > 6: entry['prefix'] = parts[6]
+                    if len(parts) > 7: entry['scope'] = parts[7]
+                    if len(parts) > 8: entry['type'] = parts[8]
+                    if len(parts) > 9: entry['state'] = parts[9]
+                    
+                    # Only add non-empty lines with at least an interface name
+                    if len(parts) >= 3:
+                        ip_addresses.append(entry)
+            return ip_addresses, None
         else:
             return None, "Commande non supportée"
     except Exception as e:
@@ -364,6 +409,8 @@ def show_results():
             html = generate_pagecache_files_html(output[1:], t)
         elif command == "linux.pslist.PsList":
             html = generate_pslist_html(output[1:], t)
+        elif command == "linux.ip.Addr":
+            html = generate_ipaddr_html(output[1:], t)
         else:
             html = "<p>Format de sortie non supporté</p>"
         
@@ -567,6 +614,55 @@ def generate_envars_html(envars, t):
         </tbody>
     </table>
     """
+
+def generate_ipaddr_html(ip_addresses, t):
+    return f"""
+    <table id="ipaddr-table">
+        <thead>
+            <tr>
+                <th>{t['netns']}</th>
+                <th>{t['index']}</th>
+                <th>{t['interface']}</th>
+                <th>{t['mac']}</th>
+                <th>{t['promiscuous']}</th>
+                <th>{t['ip']}</th>
+                <th>{t['prefix']}</th>
+                <th>{t['scope']}</th>
+                <th>{t['type']}</th>
+                <th>{t['state']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('ipaddr-table')" placeholder="Filter..."></th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{i['netns']}</td>
+                <td>{i['index']}</td>
+                <td>{i['interface']}</td>
+                <td>{i['mac']}</td>
+                <td>{i['promiscuous']}</td>
+                <td>{i['ip']}</td>
+                <td>{i['prefix']}</td>
+                <td>{i['scope']}</td>
+                <td>{i['type']}</td>
+                <td>{i['state']}</td>
+            </tr>
+            ''' for i in ip_addresses)}
+        </tbody>
+    </table>
+    """
+
 
 def generate_boottime_html(boottime, t):
     return f"""

@@ -297,6 +297,100 @@ def get_process_list(dump_path, command="linux.pslist"):
                     if len(parts) >= 3:
                         ip_addresses.append(entry)
             return ip_addresses, None
+        elif command == "linux.check_syscall.Check_syscall":
+            syscalls = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 5:
+                        syscalls.append({
+                            'address': parts[0],
+                            'name': parts[1],
+                            'index': parts[2],
+                            'handleraddr': parts[3],
+                            'handlersymb': parts[4]
+                        })
+            return syscalls, None
+        elif command == "linux.elfs.Elfs":
+            elfs = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 6:
+                        elfs.append({
+                            'pid': parts[0],
+                            'process': parts[1],
+                            'start': parts[2],
+                            'end': parts[3],
+                            'filepath': parts[4],
+                            'fileoutput': parts[5]
+                        })
+            return elfs, None
+        elif command == "linux.hidden_modules.Hidden_modules":
+            hidden_modules = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 6:
+                        hidden_modules.append({
+                            'offset': parts[0],
+                            'module': parts[1],
+                            'codesize': parts[2],
+                            'taints': parts[3],
+                            'arguments': parts[4],
+                            'fileoutput': parts[5]
+                        })
+            return hidden_modules, None
+        elif command == "linux.library_list.LibraryList":
+            libraries = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        libraries.append({
+                            'name': parts[0],
+                            'pid': parts[1],
+                            'loadaddress': parts[2],
+                            'path': parts[3]
+                        })
+            return libraries, None
+        elif command == "linux.pagecache.RecoverFs":
+            recover_fs = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 15:
+                        recover_fs.append({
+                            'blockaddr': parts[0],
+                            'mountpoint': parts[1],
+                            'device': parts[2],
+                            'inodenum': parts[3],
+                            'inodeaddr': parts[4],
+                            'filetype': parts[5],
+                            'inodepages': parts[6],
+                            'cachedpages': parts[7],
+                            'filemode': parts[8],
+                            'accesstime': parts[9:12],
+                            'modificationtime': parts[12:15],
+                            'changetime': parts[15:18],
+                            'filepath': parts[18],
+                            'inodesize': parts[19],
+                            'recovered': parts[20]
+                        })
+            return recover_fs, None
+        elif command == "linux.psaux.PsAux":
+            psaux = []
+            for line in result.stdout.split('\n'):
+                if line.strip() and not line.startswith('Volatility'):
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        psaux.append({
+                            'pid': parts[0],
+                            'ppid': parts[1],
+                            'comm': parts[2],
+                            'args': parts[3]
+                        })
+            return psaux, None
         else:
             return None, "Commande non supportée"
     except Exception as e:
@@ -411,6 +505,18 @@ def show_results():
             html = generate_pslist_html(output[1:], t)
         elif command == "linux.ip.Addr":
             html = generate_ipaddr_html(output[1:], t)
+        elif command == "linux.check_syscall.Check_syscall":
+            html = generate_check_syscall_html(output[1:], t)
+        elif command == "linux.elfs.Elfs":
+            html = generate_elfs_html(output[1:], t)
+        elif command == "linux.hidden_modules.Hidden_modules":
+            html = generate_hidden_modules_html(output[1:], t)
+        elif command == "linux.library_list.LibraryList":
+            html = generate_library_list_html(output[1:], t)
+        elif command == "linux.pagecache.RecoverFs":
+            html = generate_recover_fs_html(output[1:], t)
+        elif command == "linux.psaux.PsAux":
+            html = generate_psaux_html(output[1:], t)
         else:
             html = "<p>Format de sortie non supporté</p>"
         
@@ -663,7 +769,6 @@ def generate_ipaddr_html(ip_addresses, t):
     </table>
     """
 
-
 def generate_boottime_html(boottime, t):
     return f"""
     <table id="boottime-table">
@@ -780,6 +885,234 @@ def generate_pslist_html(processes, t):
                 <td>{p['file_output']}</td>
             </tr>
             ''' for p in processes)}
+        </tbody>
+    </table>
+    """
+
+def generate_check_syscall_html(syscall, t):
+    return f"""
+    <table id="syscall-table">
+        <thead>
+            <tr>
+                <th>{t['address']}</th>
+                <th>{t['name']}</th>
+                <th>{t['index']}</th>
+                <th>{t['handleraddr']}</th>
+                <th>{t['handlersymb']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('syscall-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('syscall-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('syscall-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('syscall-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('syscall-table')" placeholder="Filter..."></th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['address']}</td>
+                <td>{p['name']}</td>
+                <td>{p['index']}</td>
+                <td>{p['handleraddr']}</td>
+                <td>{p['handlersymb']}</td>
+            </tr>
+            ''' for p in syscall)}
+        </tbody>
+    </table>
+    """
+
+def generate_elfs_html(elfs, t):
+    return f"""
+    <table id="elfs-table">
+        <thead>
+            <tr>
+                <th>{t['pid']}</th>
+                <th>{t['process']}</th>
+                <th>{t['start']}</th>
+                <th>{t['end']}</th>
+                <th>{t['filepath']}</th>
+                <th>{t['fileoutput']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('elfs-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('elfs-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('elfs-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('elfs-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('elfs-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('elfs-table')" placeholder="Filter..."></th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['pid']}</td>
+                <td>{p['process']}</td>
+                <td>{p['start']}</td>
+                <td>{p['end']}</td>
+                <td>{p['filepath']}</td>
+                <td>{p['fileoutput']}</td>
+            </tr>
+            ''' for p in elfs)}
+        </tbody>
+    </table>
+    """
+
+def generate_hidden_modules_html(hiddenmodules, t):
+    return f"""
+    <table id="hiddenmodules-table">
+        <thead>
+            <tr>
+                <th>{t['offset']}</th>
+                <th>{t['module']}</th>
+                <th>{t['codesize']}</th>
+                <th>{t['taints']}</th>
+                <th>{t['arguments']}</th>
+                <th>{t['fileoutput']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('hiddenmodules-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('hiddenmodules-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('hiddenmodules-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('hiddenmodules-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('hiddenmodules-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('hiddenmodules-table')" placeholder="Filter..."></th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['offset']}</td>
+                <td>{p['module']}</td>
+                <td>{p['codesize']}</td>
+                <td>{p['taints']}</td>
+                <td>{p['arguments']}</td>
+                <td>{p['fileoutput']}</td>
+            </tr>
+            ''' for p in hiddenmodules)}
+        </tbody>
+    </table>
+    """
+
+def generate_library_list_html(library, t):
+    return f"""
+    <table id="library-table">
+        <thead>
+            <tr>
+                <th>{t['name']}</th>
+                <th>{t['pid']}</th>
+                <th>{t['loadaddress']}</th>
+                <th>{t['path']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['name']}</td>
+                <td>{p['pid']}</td>
+                <td>{p['loadaddress']}</td>
+                <td>{p['path']}</td>
+            </tr>
+            ''' for p in library)}
+        </tbody>
+    </table>
+    """
+
+def generate_recover_fs_html(library, t):
+    return f"""
+    <table id="library-table">
+        <thead>
+            <tr>
+                <th>{t['blockaddr']}</th>
+                <th>{t['mountpoint']}</th>
+                <th>{t['device']}</th>
+                <th>{t['inodenum']}</th>
+                <th>{t['inodeaddr']}</th>
+                <th>{t['filetype']}</th>
+                <th>{t['inodepages']}</th>
+                <th>{t['cachedpages']}</th>
+                <th>{t['filemode']}</th>
+                <th>{t['accesstime']}</th>
+                <th>{t['modificationtime']}</th>
+                <th>{t['changetime']}</th>
+                <th>{t['filepath']}</th>
+                <th>{t['inodesize']}</th>
+                <th>{t['recovered']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('library-table')" placeholder="Filter..."></th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['blockaddr']}</td>
+                <td>{p['mountpoint']}</td>
+                <td>{p['device']}</td>
+                <td>{p['inodenum']}</td>
+                <td>{p['inodeaddr']}</td>
+                <td>{p['filetype']}</td>
+                <td>{p['inodepages']}</td>
+                <td>{p['cachedpages']}</td>
+                <td>{p['filemode']}</td>
+                <td>{' '.join(p['accesstime'])}</td>
+                <td>{' '.join(p['modificationtime'])}</td>
+                <td>{' '.join(p['changetime'])}</td>
+                <td>{p['filepath']}</td>
+                <td>{p['inodesize']}</td>
+                <td>{p['recovered']}</td>
+            </tr>
+            ''' for p in library)}
+        </tbody>
+    </table>
+    """
+
+def generate_psaux_html(psaux, t):
+    return f"""
+    <table id="psaux-table">
+        <thead>
+            <tr>
+                <th>{t['pid']}</th>
+                <th>{t['ppid']}</th>
+                <th>{t['comm']}</th>
+                <th>{t['args']}</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input type="text" class="filter-input" onkeyup="filterTable('psaux-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('psaux-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('psaux-table')" placeholder="Filter..."></th>
+                <th><input type="text" class="filter-input" onkeyup="filterTable('psaux-table')" placeholder="Filter..."></th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['pid']}</td>
+                <td>{p['ppid']}</td>
+                <td>{p['comm']}</td>
+                <td>{p['args']}</td>
+            </tr>
+            ''' for p in psaux)}
         </tbody>
     </table>
     """

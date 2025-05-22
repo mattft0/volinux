@@ -56,7 +56,13 @@ function App() {
     { name: "Networks Infos", command: "linux.ip.Link" },
     { name: "Boottime Infos", command: "linux.boottime.Boottime" },
     { name: "List File in Memory", command: "linux.pagecache.Files" },
-    { name: "Process List", command: "linux.pslist.PsList" }
+    { name: "Process List", command: "linux.pslist.PsList" },
+    { name: "Process List (Aux)", command: "linux.psaux.PsAux" },
+    { name: "Process List (Syscall)", command: "linux.check_syscall.Check_syscall" },
+    { name: "List of ELF files", command: "linux.elfs.Elfs" },
+    { name: "List of Libraries", command: "linux.library_list.LibraryList" },
+    { name: "Hidden Modules", command: "linux.hidden_modules.Hidden_modules" },
+    { name: "Recover Filesystem", command: "linux.pagecache.RecoverFs" }
   ];
 
   const handleDrag = (e) => {

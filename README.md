@@ -66,6 +66,9 @@ Volinux is a modern web-based platform for analyzing Linux memory dumps, combini
 
 4. View and filter the detailed results in a new browser tab
 
+## Acknowledgements
+[Abyss-W4tcher](https://github.com/Abyss-W4tcher) for his wonderful works on Volatility3 Symbols  
+[Auteqia](https://auteqia.garden/) for his valuable advice  
 
 ## 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.

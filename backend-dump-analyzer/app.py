@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, send_file
 from flask_cors import CORS
 import os
 import subprocess
@@ -6,6 +6,7 @@ import tempfile
 import json
 import logging
 import re
+import pdfkit
 
 # Configuration des logs
 logging.basicConfig(level=logging.DEBUG)
@@ -97,6 +98,7 @@ translations = {
         'handleraddr': 'Handler Address',
         'handlersymb': 'Handler Symbol',
         'name': 'Name',
+        'download_pdf': 'Download as PDF'
     },
     'fr': {
         'title': 'Résultats de l\'analyse - {command}',
@@ -130,10 +132,21 @@ translations = {
         'file_path': 'Chemin du fichier',
         'offset': 'Offset',
         'tid': 'TID',
+        'netns': 'NetNS',
+        'index': 'Index',
+        'interface': 'Interface',
+        'mac': 'Adresse MAC',
+        'promiscuous': 'Promiscuité',
+        'ip': 'Adresse IP',
+        'prefix': 'Préfixe',
+        'scope': 'Portée',
+        'type': 'Type',
+        'state': 'État',    
         'creation_time': 'Heure de création',
         'file_output': 'Sortie fichier',
         'switch_to_fr': 'Passer en français',
-        'switch_to_en': 'Passer en anglais'
+        'switch_to_en': 'Passer en anglais',
+        'download_pdf': 'Télécharger en PDF'
     }
 }
 
@@ -555,10 +568,13 @@ def show_results():
         <!DOCTYPE html>
         <html>
         <head>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
             <title>{t['title'].format(command=command)}</title>
             <style>
                 body {{
-                    font-family: Arial, sans-serif;
+                    font-family: 'Lexend', sans-serif;
                     margin: 20px;
                     background-color: #f5f5f5;
                 }}
@@ -642,6 +658,25 @@ def show_results():
                     white-space: pre-wrap;
                     word-wrap: break-word;
                 }}
+                .button-container {{
+                    margin-top: 20px;
+                    text-align: right;
+                    margin-bottom: 20px;
+                }}
+                .download-button {{
+                    padding: 10px 20px;
+                    background-color: #28a745;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    text-decoration: none;
+                    display: inline-block;
+                }}
+                .download-button:hover {{
+                    background-color: #218838;
+                }}
             </style>
             <script>
                 function filterTable(tableId) {{
@@ -674,6 +709,11 @@ def show_results():
                         </a>
                     </div>
                 </div>
+                <div class="button-container">
+                    <a href="/download_pdf?lang={lang}" class="download-button">
+                        {t.get('download_pdf', 'Download as PDF')}
+                    </a>
+                </div>
                 <div class="info">
                     <p><strong>{t['os']}:</strong> {results.get('os', 'N/A')}</p>
                     <p><strong>{t['kernel_version']}:</strong> {results.get('kernel_version', 'N/A')}</p>
@@ -689,6 +729,128 @@ def show_results():
     except Exception as e:
         return f"Error: {str(e)}"
     
+@app.route('/download_pdf', methods=['GET'])
+def download_pdf():
+    try:
+        with open('last_analysis.json', 'r') as f:
+            results = json.load(f)
+        
+        command = results.get('command', '')
+        output = results.get('output', [])
+        lang = request.args.get('lang', 'en')
+        t = translations[lang]
+        
+        # Générer le HTML spécifique pour PDF (sans les filtres)
+        if command == "linux.bash":
+            html = generate_bash_html_pdf(output[1:], t)
+        elif command == "linux.envars":
+            html = generate_envars_html_pdf(output[1:], t)
+        elif command == "linux.boottime.Boottime":
+            html = generate_boottime_html_pdf(output[1:], t)
+        elif command == "linux.pagecache.Files":
+            html = generate_pagecache_files_html_pdf(output[1:], t)
+        elif command == "linux.pslist.PsList":
+            html = generate_pslist_html_pdf(output[1:], t)
+        elif command == "linux.ip.Addr":
+            html = generate_ipaddr_html_pdf(output[1:], t)
+        elif command == "linux.check_syscall.Check_syscall":
+            html = generate_check_syscall_html_pdf(output[1:], t)
+        elif command == "linux.elfs.Elfs":
+            html = generate_elfs_html_pdf(output[1:], t)
+        elif command == "linux.hidden_modules.Hidden_modules":
+            html = generate_hidden_modules_html_pdf(output[1:], t)
+        elif command == "linux.library_list.LibraryList":
+            html = generate_library_list_html_pdf(output[1:], t)
+        elif command == "linux.pagecache.RecoverFs":
+            html = generate_recover_fs_html_pdf(output[1:], t)
+        elif command == "linux.psaux.PsAux":
+            html = generate_psaux_html_pdf(output[1:], t)
+        else:
+            html = "<p>Format de sortie non supporté</p>"
+        
+        # Créer le HTML complet
+        full_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>{t['title'].format(command=command)}</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                    font-size: 10px; /* Réduire la taille de police pour les tableaux */
+                }}
+                th, td {{
+                    padding: 6px;
+                    text-align: left;
+                    border: 1px solid #ddd;
+                }}
+                th {{
+                    background-color: #f8f9fa;
+                    font-weight: bold;
+                }}
+                .info {{
+                    margin-bottom: 20px;
+                    padding: 10px;
+                    background-color: #e9ecef;
+                    border-radius: 4px;
+                }}
+                h1 {{
+                    font-size: 18px;
+                    margin-bottom: 15px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div>
+                <h1>{t['title'].format(command=command)}</h1>
+                <div class="info">
+                    <p><strong>{t['os']}:</strong> {results.get('os', 'N/A')}</p>
+                    <p><strong>{t['kernel_version']}:</strong> {results.get('kernel_version', 'N/A')}</p>
+                    <p><strong>{t['distribution']}:</strong> {results.get('distribution', 'N/A')}</p>
+                    <p><strong>{t['distribution_version']}:</strong> {results.get('distribution_version', 'N/A')}</p>
+                    <p><strong>{t['executed_command']}:</strong> {command}</p>
+                </div>
+                {html}
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Créer un fichier temporaire pour le PDF
+        temp_file = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False)
+        pdf_path = temp_file.name
+        temp_file.close()
+        
+        # Générer le PDF à partir du HTML
+        pdfkit_options = {
+            'page-size': 'A4',
+            'margin-top': '0.75in',
+            'margin-right': '0.5in',
+            'margin-bottom': '0.75in',
+            'margin-left': '0.5in',
+            'encoding': 'UTF-8',
+            'no-outline': None,
+            'orientation': 'Landscape'  # Format paysage pour inclure plus de colonnes
+        }
+        
+        # Utiliser une configuration explicite pour spécifier le chemin de wkhtmltopdf
+        config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
+        
+        pdfkit.from_string(full_html, pdf_path, options=pdfkit_options, configuration=config)
+        
+        # Envoyer le fichier PDF
+        filename = f"volinux_analysis_{command.replace('.', '_')}.pdf"
+        return send_file(pdf_path, as_attachment=True, download_name=filename, mimetype='application/pdf')
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 def generate_bash_html(commands, t):
     return f"""
     <table id="bash-table">
@@ -1148,5 +1310,359 @@ def generate_psaux_html(psaux, t):
     </table>
     """
 
+def generate_ipaddr_html_pdf(ip_addresses, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['netns']}</th>
+                <th>{t['index']}</th>
+                <th>{t['interface']}</th>
+                <th>{t['mac']}</th>
+                <th>{t['promiscuous']}</th>
+                <th>{t['ip']}</th>
+                <th>{t['prefix']}</th>
+                <th>{t['scope']}</th>
+                <th>{t['type']}</th>
+                <th>{t['state']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{i['netns']}</td>
+                <td>{i['index']}</td>
+                <td>{i['interface']}</td>
+                <td>{i['mac']}</td>
+                <td>{i['promiscuous']}</td>
+                <td>{i['ip']}</td>
+                <td>{i['prefix']}</td>
+                <td>{i['scope']}</td>
+                <td>{i['type']}</td>
+                <td>{i['state']}</td>
+            </tr>
+            ''' for i in ip_addresses)}
+        </tbody>
+    </table>
+    """
+
+def generate_bash_html_pdf(commands, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['pid']}</th>
+                <th>{t['process']}</th>
+                <th>{t['time']}</th>
+                <th>{t['command']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{c['pid']}</td>
+                <td>{c['process']}</td>
+                <td>{c['time']}</td>
+                <td>{c['command']}</td>
+            </tr>
+            ''' for c in commands)}
+        </tbody>
+    </table>
+    """
+
+def generate_envars_html_pdf(envars, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['pid']}</th>
+                <th>{t['ppid']}</th>
+                <th>{t['comm']}</th>
+                <th>{t['key']}</th>
+                <th>{t['value']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{e['pid']}</td>
+                <td>{e['ppid']}</td>
+                <td>{e['comm']}</td>
+                <td>{e['key']}</td>
+                <td>{e['value']}</td>
+            </tr>
+            ''' for e in envars)}
+        </tbody>
+    </table>
+    """
+
+def generate_boottime_html_pdf(boottime, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['time_ns']}</th>
+                <th>{t['boot_time']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{b['time_ns']}</td>
+                <td>{b['boot_time']}</td>
+            </tr>
+            ''' for b in boottime)}
+        </tbody>
+    </table>
+    """
+
+def generate_pagecache_files_html_pdf(files, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['superblock_addr']}</th>
+                <th>{t['mount_point']}</th>
+                <th>{t['device']}</th>
+                <th>{t['inode_num']}</th>
+                <th>{t['inode_addr']}</th>
+                <th>{t['file_type']}</th>
+                <th>{t['inode_pages']}</th>
+                <th>{t['cached_pages']}</th>
+                <th>{t['file_mode']}</th>
+                <th>{t['access_time']}</th>
+                <th>{t['modification_time']}</th>
+                <th>{t['change_time']}</th>
+                <th>{t['file_path']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{f['superblock_addr']}</td>
+                <td>{f['mount_point']}</td>
+                <td>{f['device']}</td>
+                <td>{f['inode_num']}</td>
+                <td>{f['inode_addr']}</td>
+                <td>{f['file_type']}</td>
+                <td>{f['inode_pages']}</td>
+                <td>{f['cached_pages']}</td>
+                <td>{f['file_mode']}</td>
+                <td>{' '.join(f['access_time'])}</td>
+                <td>{' '.join(f['modification_time'])}</td>
+                <td>{' '.join(f['change_time'])}</td>
+                <td>{f['file_path']}</td>
+            </tr>
+            ''' for f in files)}
+        </tbody>
+    </table>
+    """
+
+def generate_pslist_html_pdf(processes, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['offset']}</th>
+                <th>{t['pid']}</th>
+                <th>{t['tid']}</th>
+                <th>{t['ppid']}</th>
+                <th>{t['comm']}</th>
+                <th>{t['creation_time']}</th>
+                <th>{t['file_output']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['offset']}</td>
+                <td>{p['pid']}</td>
+                <td>{p['tid']}</td>
+                <td>{p['ppid']}</td>
+                <td>{p['comm']}</td>
+                <td>{p['creation_time']}</td>
+                <td>{p['file_output']}</td>
+            </tr>
+            ''' for p in processes)}
+        </tbody>
+    </table>
+    """
+
+def generate_check_syscall_html_pdf(syscall, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['address']}</th>
+                <th>{t['name']}</th>
+                <th>{t['index']}</th>
+                <th>{t['handleraddr']}</th>
+                <th>{t['handlersymb']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['address']}</td>
+                <td>{p['name']}</td>
+                <td>{p['index']}</td>
+                <td>{p['handleraddr']}</td>
+                <td>{p['handlersymb']}</td>
+            </tr>
+            ''' for p in syscall)}
+        </tbody>
+    </table>
+    """
+
+def generate_elfs_html_pdf(elfs, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['pid']}</th>
+                <th>{t['process']}</th>
+                <th>{t['start']}</th>
+                <th>{t['end']}</th>
+                <th>{t['filepath']}</th>
+                <th>{t['fileoutput']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['pid']}</td>
+                <td>{p['process']}</td>
+                <td>{p['start']}</td>
+                <td>{p['end']}</td>
+                <td>{p['filepath']}</td>
+                <td>{p['fileoutput']}</td>
+            </tr>
+            ''' for p in elfs)}
+        </tbody>
+    </table>
+    """
+
+def generate_hidden_modules_html_pdf(hiddenmodules, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['offset']}</th>
+                <th>{t['module']}</th>
+                <th>{t['codesize']}</th>
+                <th>{t['taints']}</th>
+                <th>{t['arguments']}</th>
+                <th>{t['fileoutput']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['offset']}</td>
+                <td>{p['module']}</td>
+                <td>{p['codesize']}</td>
+                <td>{p['taints']}</td>
+                <td>{p['arguments']}</td>
+                <td>{p['fileoutput']}</td>
+            </tr>
+            ''' for p in hiddenmodules)}
+        </tbody>
+    </table>
+    """
+
+def generate_library_list_html_pdf(library, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['name']}</th>
+                <th>{t['pid']}</th>
+                <th>{t['loadaddress']}</th>
+                <th>{t['path']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['name']}</td>
+                <td>{p['pid']}</td>
+                <td>{p['loadaddress']}</td>
+                <td>{p['path']}</td>
+            </tr>
+            ''' for p in library)}
+        </tbody>
+    </table>
+    """
+
+def generate_recover_fs_html_pdf(library, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['blockaddr']}</th>
+                <th>{t['mountpoint']}</th>
+                <th>{t['device']}</th>
+                <th>{t['inodenum']}</th>
+                <th>{t['inodeaddr']}</th>
+                <th>{t['filetype']}</th>
+                <th>{t['inodepages']}</th>
+                <th>{t['cachedpages']}</th>
+                <th>{t['filemode']}</th>
+                <th>{t['accesstime']}</th>
+                <th>{t['modificationtime']}</th>
+                <th>{t['changetime']}</th>
+                <th>{t['filepath']}</th>
+                <th>{t['inodesize']}</th>
+                <th>{t['recovered']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['blockaddr']}</td>
+                <td>{p['mountpoint']}</td>
+                <td>{p['device']}</td>
+                <td>{p['inodenum']}</td>
+                <td>{p['inodeaddr']}</td>
+                <td>{p['filetype']}</td>
+                <td>{p['inodepages']}</td>
+                <td>{p['cachedpages']}</td>
+                <td>{p['filemode']}</td>
+                <td>{' '.join(p['accesstime'])}</td>
+                <td>{' '.join(p['modificationtime'])}</td>
+                <td>{' '.join(p['changetime'])}</td>
+                <td>{p['filepath']}</td>
+                <td>{p['inodesize']}</td>
+                <td>{p['recovered']}</td>
+            </tr>
+            ''' for p in library)}
+        </tbody>
+    </table>
+    """
+
+def generate_psaux_html_pdf(psaux, t):
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>{t['pid']}</th>
+                <th>{t['ppid']}</th>
+                <th>{t['comm']}</th>
+                <th>{t['args']}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(f'''
+            <tr>
+                <td>{p['pid']}</td>
+                <td>{p['ppid']}</td>
+                <td>{p['comm']}</td>
+                <td>{p['args']}</td>
+            </tr>
+            ''' for p in psaux)}
+        </tbody>
+    </table>
+    """
+
 if __name__ == '__main__':
-    app.run(port=8000, debug=True) 
+    app.run(port=8000, debug=True)

@@ -59,6 +59,11 @@ logs/
 htmlcov/
 .pytest_cache/
 
+# Temporary files
+last_analysis.json
+last_dump_path.json
+app.cpython-311.pyc
+
 # Dumps mémoire
 *.dmp
 *.raw
